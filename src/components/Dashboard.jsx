@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import InventoryModal from './InventoryModal';
 
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = 'https://molinos-inventario-back.onrender.com';
 
 const authHeaders = () => ({
   Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -420,7 +420,7 @@ export default function Dashboard({ onLogout }) {
 
   useEffect(() => {
     const fetchMe = async () => {
-      const response = await fetch('http://localhost:8000/users/me', {
+      const response = await fetch(`${API_BASE_URL}/users/me`, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
       if (response.ok) setCurrentUser(await response.json());
@@ -431,7 +431,7 @@ export default function Dashboard({ onLogout }) {
   const isAdmin = currentUser?.is_admin;
 
   const fetchInventory = async () => {
-    const response = await fetch('http://localhost:8000/inventory/', {
+    const response = await fetch(`${API_BASE_URL}/inventory/`, {
       headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
     });
     if (response.ok) setInventory(await response.json());
@@ -450,7 +450,7 @@ export default function Dashboard({ onLogout }) {
   );
 
   const handleSaveInventory = async (formData) => {
-    const url = editingItem ? `http://localhost:8000/inventory/${editingItem.id}` : 'http://localhost:8000/inventory/';
+    const url = editingItem ? `${API_BASE_URL}/inventory/${editingItem.id}` : `${API_BASE_URL}/inventory/`;
     const method = editingItem ? 'PUT' : 'POST';
     const response = await fetch(url, {
       method: method,
@@ -462,7 +462,7 @@ export default function Dashboard({ onLogout }) {
 
   const generateReport = async () => {
     try {
-      const response = await fetch('http://localhost:8000/reporte/excel', {
+      const response = await fetch(`${API_BASE_URL}/reporte/excel`, {
         method: 'GET',
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
@@ -489,7 +489,7 @@ export default function Dashboard({ onLogout }) {
     const formData = new FormData();
     formData.append('file', file);
     try {
-      const response = await fetch('http://localhost:8000/inventory/upload-masivo', {
+      const response = await fetch(`${API_BASE_URL}/inventory/upload-masivo`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
         body: formData
@@ -511,7 +511,7 @@ export default function Dashboard({ onLogout }) {
 
   const handleRetirar = async (id) => {
     if (!window.confirm("¿Desea retirar este equipo?")) return;
-    const response = await fetch(`http://localhost:8000/inventory/${id}/retirar`, {
+    const response = await fetch(`${API_BASE_URL}/inventory/${id}/retirar`, {
       method: 'PATCH',
       headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
     });
@@ -519,7 +519,7 @@ export default function Dashboard({ onLogout }) {
   };
 
   const handleActivar = async (id) => {
-    const response = await fetch(`http://localhost:8000/inventory/${id}/activar`, {
+    const response = await fetch(`${API_BASE_URL}/inventory/${id}/activar`, {
       method: 'PATCH',
       headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
     });

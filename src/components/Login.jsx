@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 
+const API_BASE_URL = 'https://molinos-inventario-back.onrender.com';
+
 export default function Login({ setToken }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -10,7 +12,7 @@ export default function Login({ setToken }) {
     formData.append('username', username);
     formData.append('password', password);
 
-    const response = await fetch('http://localhost:8000/login', {
+    const response = await fetch(`${API_BASE_URL}/login`, {
       method: 'POST',
       body: formData,
     });

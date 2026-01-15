@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { Plus, Building2, MapPin, Briefcase } from 'lucide-react';
 
+const API_BASE_URL = 'https://molinos-inventario-back.onrender.com';
+
 export default function Catalogs() {
   const [nombre, setNombre] = useState('');
   const [tipo, setTipo] = useState('areas'); // áreas, empresas, cargos, equipo_tipos
 
   const handleSave = async (e) => {
     e.preventDefault();
-    const response = await fetch(`http://localhost:8000/${tipo}/`, {
+    const response = await fetch(`${API_BASE_URL}/${tipo}/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { ShieldCheck } from 'lucide-react';
 
+const API_BASE_URL = 'https://molinos-inventario-back.onrender.com';
+
 export default function UserAdmin() {
   const [userForm, setUserForm] = useState({ username: '', full_name: '', password: '' });
 
   const handleCreateUser = async (e) => {
     e.preventDefault();
-    const response = await fetch('http://localhost:8000/users/', {
+    const response = await fetch(`${API_BASE_URL}/users/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

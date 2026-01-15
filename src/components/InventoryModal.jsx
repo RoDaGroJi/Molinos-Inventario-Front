@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save, UserPlus, Box, MapPin, Building2, ClipboardList } from 'lucide-react';
 
+const API_BASE_URL = 'https://molinos-inventario-back.onrender.com';
+
 export default function InventoryModal({ isOpen, onClose, onSave, initialData, readOnly }) {
   const [formData, setFormData] = useState({
     empleado_nombre: '',
@@ -33,11 +35,11 @@ export default function InventoryModal({ isOpen, onClose, onSave, initialData, r
         setLoading(true);
         const headers = { 'Authorization': `Bearer ${localStorage.getItem('token')}` };
         try {
-          const resAreas = await fetch('http://localhost:8000/areas/', { headers });
-          const resEmpresas = await fetch('http://localhost:8000/empresas/', { headers });
-          const resEquipos = await fetch('http://localhost:8000/equipo_tipos/', { headers });
-          const resCargos = await fetch('http://localhost:8000/cargos/', { headers });
-          const resCiudades = await fetch('http://localhost:8000/ciudades/', { headers });
+          const resAreas = await fetch(`${API_BASE_URL}/areas/`, { headers });
+          const resEmpresas = await fetch(`${API_BASE_URL}/empresas/`, { headers });
+          const resEquipos = await fetch(`${API_BASE_URL}/equipo_tipos/`, { headers });
+          const resCargos = await fetch(`${API_BASE_URL}/cargos/`, { headers });
+          const resCiudades = await fetch(`${API_BASE_URL}/ciudades/`, { headers });
 
           setCatalogs({
             areas: resAreas.ok ? await resAreas.json() : [],
