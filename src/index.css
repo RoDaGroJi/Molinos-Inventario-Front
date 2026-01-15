@@ -1,0 +1,8 @@
+@import "tailwindcss";
+
+/* Aquí puedes definir tus colores corporativos si prefieres CSS puro */
+@theme {
+  --color-brand-dark: #0f172a;
+  --color-brand-primary: #2563eb;
+  --color-brand-light: #f8fafc;
+}
