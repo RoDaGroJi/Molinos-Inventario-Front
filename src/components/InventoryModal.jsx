@@ -1,216 +1,430 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, UserPlus, Box, MapPin, Building2, ClipboardList } from 'lucide-react';
+import { X, Save, Search, UserPlus, Box, Trash2, Plus } from 'lucide-react';
 
 const API_BASE_URL = 'https://molinos-inventario-back.onrender.com';
+// const API_BASE_URL = 'http://localhost:8000';
 
 export default function InventoryModal({ isOpen, onClose, onSave, initialData, readOnly }) {
   const [formData, setFormData] = useState({
-    empleado_nombre: '',
-    cargo_id: '',
-    area_id: '',
-    empresa_id: '',
-    equipo_id: '',
-    ciudad_id: '',
+    empleado_id: '',
+    producto_id: '',
+    sede_id: '',
     quien_entrega: '',
-    cantidad: 1,
-    marca: '',
-    caracteristicas: '',
     observacion: ''
   });
+  
+  const [ciudades, setCiudades] = useState([]);
 
-  const [catalogs, setCatalogs] = useState({
-    areas: [],
-    empresas: [],
-    equipos: [],
-    cargos: [],
-    ciudades: []
-  });
+  const [empleadoSearch, setEmpleadoSearch] = useState('');
+  const [empleados, setEmpleados] = useState([]);
+  const [selectedEmpleado, setSelectedEmpleado] = useState(null);
+  const [productoSearch, setProductoSearch] = useState('');
+  const [productos, setProductos] = useState([]);
+  const [selectedProductos, setSelectedProductos] = useState([]);
 
-  const [loading, setLoading] = useState(false);
-
-  // 1. Cargar Catálogos al abrir el modal
+  // Cargar ciudades para sede
   useEffect(() => {
     if (isOpen) {
-      const fetchCatalogs = async () => {
-        setLoading(true);
+      const fetchCiudades = async () => {
         const headers = { 'Authorization': `Bearer ${localStorage.getItem('token')}` };
         try {
-          const resAreas = await fetch(`${API_BASE_URL}/areas/`, { headers });
-          const resEmpresas = await fetch(`${API_BASE_URL}/empresas/`, { headers });
-          const resEquipos = await fetch(`${API_BASE_URL}/equipo_tipos/`, { headers });
-          const resCargos = await fetch(`${API_BASE_URL}/cargos/`, { headers });
-          const resCiudades = await fetch(`${API_BASE_URL}/ciudades/`, { headers });
-
-          setCatalogs({
-            areas: resAreas.ok ? await resAreas.json() : [],
-            empresas: resEmpresas.ok ? await resEmpresas.json() : [],
-            equipos: resEquipos.ok ? await resEquipos.json() : [],
-            cargos: resCargos.ok ? await resCargos.json() : [],
-            ciudades: resCiudades.ok ? await resCiudades.json() : []
-          });
+          const res = await fetch(`${API_BASE_URL}/ciudades/`, { headers });
+          if (res.ok) {
+            const data = await res.json();
+            setCiudades(data);
+          }
         } catch (error) {
-          console.error("Error cargando catálogos:", error);
-        } finally {
-          setLoading(false);
+          console.error("Error cargando ciudades:", error);
         }
       };
-      fetchCatalogs();
+      fetchCiudades();
     }
   }, [isOpen]);
 
-  // 2. CARGAR INFORMACIÓN CUANDO ES EDICIÓN O DETALLE
+  // Buscar empleados cuando cambia el término de búsqueda
+  useEffect(() => {
+    // Solo buscar si hay texto Y no coincide con el empleado seleccionado
+    const shouldSearch = empleadoSearch && 
+                         empleadoSearch.length >= 2 && 
+                         !readOnly &&
+                         (!selectedEmpleado || empleadoSearch !== selectedEmpleado.nombre);
+    
+    if (isOpen && shouldSearch) {
+      const searchEmpleados = async () => {
+        const headers = { 'Authorization': `Bearer ${localStorage.getItem('token')}` };
+        try {
+          const res = await fetch(`${API_BASE_URL}/empleados/?search=${encodeURIComponent(empleadoSearch)}`, { headers });
+          if (res.ok) {
+            const data = await res.json();
+            setEmpleados(data);
+          }
+        } catch (error) {
+          console.error("Error buscando empleados:", error);
+        }
+      };
+      const timeoutId = setTimeout(searchEmpleados, 300);
+      return () => clearTimeout(timeoutId);
+    } else {
+      setEmpleados([]);
+    }
+  }, [empleadoSearch, isOpen, readOnly, selectedEmpleado]);
+
+  // Buscar productos cuando cambia el término de búsqueda
+  useEffect(() => {
+    if (isOpen && productoSearch.length >= 2 && !readOnly) {
+      const searchProductos = async () => {
+        const headers = { 'Authorization': `Bearer ${localStorage.getItem('token')}` };
+        try {
+          const res = await fetch(`${API_BASE_URL}/productos/?search=${encodeURIComponent(productoSearch)}`, { headers });
+          if (res.ok) {
+            const data = await res.json();
+            setProductos(data);
+          }
+        } catch (error) {
+          console.error("Error buscando productos:", error);
+        }
+      };
+      const timeoutId = setTimeout(searchProductos, 300);
+      return () => clearTimeout(timeoutId);
+    } else {
+      setProductos([]);
+    }
+  }, [productoSearch, isOpen, readOnly]);
+
+
+  // Cargar datos cuando es edición o detalle
   useEffect(() => {
     if (isOpen && initialData) {
       setFormData({
-        ...initialData,
-        // Mapeamos los IDs porque el backend suele devolver objetos completos en los detalles
-        cargo_id: initialData.cargo?.id || initialData.cargo_id || '',
-        area_id: initialData.area?.id || initialData.area_id || '',
-        empresa_id: initialData.empresa?.id || initialData.empresa_id || '',
-        equipo_id: initialData.equipo?.id || initialData.equipo_id || '',
-        ciudad_id: initialData.ciudad?.id || initialData.ciudad_id || '',
-        cantidad: initialData.cantidad || 1,
-        marca: initialData.marca || '',
-        caracteristicas: initialData.caracteristicas || '',
-        observacion: initialData.observacion || '',
+        empleado_id: initialData.empleado_id || initialData.empleado?.id || '',
+        producto_id: initialData.producto_id || initialData.producto?.id || '',
+        sede_id: initialData.sede_id || initialData.sede?.id || initialData.empleado?.ciudad_id || '',
         quien_entrega: initialData.quien_entrega || '',
-        empleado_nombre: initialData.empleado_nombre || ''
+        observacion: initialData.observacion || ''
       });
+      
+      if (initialData.empleado) {
+        setSelectedEmpleado(initialData.empleado);
+        setEmpleadoSearch(initialData.empleado.nombre || '');
+      }
+      
+      if (initialData.producto) {
+        setSelectedProductos([initialData.producto]);
+        setProductoSearch(
+          `${initialData.producto.marca} ${initialData.producto.referencia || ''} ${initialData.producto.serial ? `[S/N: ${initialData.producto.serial}]` : ''}`.trim()
+        );
+      }
     } else if (isOpen && !initialData) {
-      // Si no hay datos iniciales, limpiar el formulario (Modo Nuevo)
+      // Limpiar formulario (Modo Nuevo)
       setFormData({
-        empleado_nombre: '', cargo_id: '', area_id: '', empresa_id: '',
-        equipo_id: '', ciudad_id: '', quien_entrega: '', cantidad: 1,
-        marca: '', caracteristicas: '', observacion: ''
+        empleado_id: '',
+        producto_id: '',
+        sede_id: '',
+        quien_entrega: '',
+        observacion: ''
       });
+      setSelectedEmpleado(null);
+      setEmpleadoSearch('');
+      setSelectedProductos([]);
+      setProductoSearch('');
+      setProductos([]);
     }
   }, [isOpen, initialData]);
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!readOnly) onSave(formData);
+  const handleEmpleadoSelect = (empleado) => {
+    setSelectedEmpleado(empleado);
+    setEmpleadoSearch(empleado.nombre);
+    setEmpleados([]);
+    // Limpiar selección de productos cuando cambia el empleado (solo si no estamos editando)
+    if (!initialData) {
+      setSelectedProductos([]);
+      setProductoSearch('');
+    }
+    setFormData(prev => ({ 
+      ...prev, 
+      empleado_id: empleado.id, 
+      producto_id: prev.producto_id || '', // Mantener producto_id si estamos editando
+      sede_id: empleado.ciudad_id || prev.sede_id 
+    }));
   };
 
-  // Clase dinámica para los inputs dependiendo de si es Solo Lectura
-  const inputClass = `w-full bg-slate-50 border border-slate-100 rounded-xl p-3 focus:ring-2 focus:ring-blue-500 outline-none font-medium transition-all ${
+  const handleProductoSelect = (producto) => {
+    // Agregar producto a la lista si no está ya seleccionado
+    if (!selectedProductos.find(p => p.id === producto.id)) {
+      setSelectedProductos([...selectedProductos, producto]);
+    }
+    setProductoSearch('');
+    setProductos([]);
+  };
+
+  const handleRemoveProducto = (productoId) => {
+    setSelectedProductos(selectedProductos.filter(p => p.id !== productoId));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!readOnly && formData.empleado_id && selectedProductos.length > 0) {
+      // Si hay múltiples productos, siempre crear múltiples registros (tanto para edición como creación)
+      if (selectedProductos.length > 1 || !initialData) {
+        // Crear múltiples registros
+        onSave({ ...formData, productos: selectedProductos, isMultiple: true, originalId: initialData?.id });
+      } else {
+        // Si es edición y solo hay un producto, actualizar el registro existente
+        const empleadoId = parseInt(formData.empleado_id);
+        const productoId = parseInt(selectedProductos[0].id);
+        
+        // Validar que los IDs sean números válidos
+        if (isNaN(empleadoId) || isNaN(productoId)) {
+          return;
+        }
+        
+        // Preparar sede_id: convertir a número o null
+        let sedeIdValue = null;
+        if (formData.sede_id && formData.sede_id !== '') {
+          const sedeIdParsed = parseInt(formData.sede_id);
+          if (!isNaN(sedeIdParsed)) {
+            sedeIdValue = sedeIdParsed;
+          }
+        }
+        
+        // Construir objeto solo con campos válidos (omitir null/undefined para campos opcionales)
+        const dataToSave = {
+          empleado_id: empleadoId,
+          producto_id: productoId
+        };
+        
+        // Agregar campos opcionales solo si tienen valor
+        if (sedeIdValue !== null) {
+          dataToSave.sede_id = sedeIdValue;
+        }
+        
+        const quienEntrega = formData.quien_entrega && formData.quien_entrega.trim() !== '' ? formData.quien_entrega.trim() : null;
+        if (quienEntrega !== null) {
+          dataToSave.quien_entrega = quienEntrega;
+        }
+        
+        const observacion = formData.observacion && formData.observacion.trim() !== '' ? formData.observacion.trim() : null;
+        if (observacion !== null) {
+          dataToSave.observacion = observacion;
+        }
+        
+        // Validar que los campos requeridos no sean null
+        if (!dataToSave.empleado_id || !dataToSave.producto_id) {
+          return;
+        }
+        
+        onSave(dataToSave);
+      }
+    }
+  };
+
+  const inputClass = `w-full bg-slate-50 border border-slate-100 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none font-medium transition-all ${
     readOnly ? 'bg-slate-100 cursor-not-allowed text-slate-500' : 'text-slate-700'
   }`;
 
   return (
-    <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
-      <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden border border-slate-200 animate-in fade-in zoom-in duration-200">
+    <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center z-[100] p-2 sm:p-4">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[95vh] flex flex-col overflow-hidden border border-slate-200 animate-in fade-in zoom-in duration-200">
         
         {/* HEADER */}
-        <div className="bg-slate-50 px-8 py-5 border-b border-slate-100 flex justify-between items-center shrink-0">
+        <div className="bg-slate-50 px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-100 flex justify-between items-center shrink-0">
           <div>
-            <h2 className="text-2xl font-black text-slate-800 tracking-tight">
+            <h2 className="text-lg sm:text-xl font-black text-slate-800 tracking-tight">
               {readOnly ? 'Detalle del Activo' : initialData ? 'Editar Activo' : 'Nuevo Activo'}
             </h2>
-            <p className="text-[10px] text-blue-600 font-bold uppercase tracking-widest">
+            <p className="text-[9px] text-blue-600 font-bold uppercase tracking-widest">
               Molinos del Atlántico
             </p>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-red-50 hover:text-red-500 rounded-full transition-colors text-slate-400">
-            <X size={24} />
+          <button onClick={onClose} className="p-1.5 hover:bg-red-50 hover:text-red-500 rounded-full transition-colors text-slate-400 cursor-pointer">
+            <X size={18} />
           </button>
         </div>
 
         {/* CUERPO */}
-        <form id="inventory-form" className="flex-1 overflow-y-auto p-8 space-y-8" onSubmit={handleSubmit}>
+        <form id="inventory-form" className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6" onSubmit={handleSubmit}>
           
-          <div className="space-y-4">
-            <h3 className="flex items-center gap-2 text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-50 pb-2">
-              <UserPlus size={16} className="text-blue-500" /> Información del Responsable
+          <div className="space-y-2 sm:space-y-3">
+            <h3 className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-50 pb-1.5">
+              <UserPlus size={12} className="text-blue-500" /> Buscar Empleado
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1 ml-1 uppercase">Nombre Empleado</label>
-                <input required type="text" disabled={readOnly} className={inputClass} value={formData.empleado_nombre}
-                  placeholder="Ej: Juan Pérez" onChange={e => setFormData({...formData, empleado_nombre: e.target.value})} />
+            <div className="relative">
+              <label className="block text-[9px] font-bold text-slate-500 mb-1 ml-1 uppercase">Empleado</label>
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                <input
+                  type="text"
+                  disabled={readOnly}
+                  className={`${inputClass} pl-9 ${readOnly ? '' : 'cursor-pointer'}`}
+                  value={empleadoSearch}
+                  placeholder={selectedEmpleado ? selectedEmpleado.nombre : "Buscar empleado por nombre..."}
+                  onChange={e => {
+                    const newValue = e.target.value;
+                    setEmpleadoSearch(newValue);
+                    // Solo limpiar selección si el usuario borra completamente el texto Y no estamos en modo edición
+                    if (!newValue && !initialData) {
+                      setSelectedEmpleado(null);
+                      setFormData(prev => ({ ...prev, empleado_id: '', producto_id: '' }));
+                      setSelectedProductos([]);
+                    } else if (!newValue && initialData) {
+                      // Si estamos editando y se borra el texto, restaurar el empleado original
+                      if (initialData.empleado) {
+                        setEmpleadoSearch(initialData.empleado.nombre || '');
+                        setSelectedEmpleado(initialData.empleado);
+                      }
+                    }
+                  }}
+                />
               </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1 ml-1 uppercase">Cargo</label>
-                <select required disabled={readOnly} className={inputClass} value={formData.cargo_id}
-                  onChange={e => setFormData({...formData, cargo_id: e.target.value})}>
-                  <option value="">Seleccione Cargo...</option>
-                  {catalogs.cargos.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-                </select>
-              </div>
+              
+              {/* Dropdown de resultados de búsqueda */}
+              {!readOnly && empleados.length > 0 && empleadoSearch && (
+                <div className="absolute z-10 w-full mt-2 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                  {empleados.map(emp => (
+                    <button
+                      key={emp.id}
+                      type="button"
+                      onClick={() => handleEmpleadoSelect(emp)}
+                      className="w-full px-4 py-3 text-left hover:bg-blue-50 transition-colors cursor-pointer"
+                    >
+                      <div className="font-bold text-slate-800">{emp.nombre}</div>
+                      <div className="text-xs text-slate-500">
+                        {emp.cargo?.nombre} - {emp.area?.nombre} - {emp.empresa?.nombre}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+              
+              {/* Información del empleado seleccionado */}
+              {selectedEmpleado && (
+                <div className="mt-2 p-3 bg-blue-50 rounded-lg border border-blue-100 text-xs">
+                  <div className="font-bold text-blue-900">{selectedEmpleado.nombre}</div>
+                  <div className="text-blue-700 mt-1">
+                    <span>{selectedEmpleado.cargo?.nombre || 'Sin cargo'}</span>
+                    {' · '}
+                    <span>{selectedEmpleado.area?.nombre || 'Sin área'}</span>
+                    {' · '}
+                    <span>{selectedEmpleado.empresa?.nombre || 'Sin empresa'}</span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="space-y-4">
-            <h3 className="flex items-center gap-2 text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-50 pb-2">
-              <MapPin size={16} className="text-blue-500" /> Ubicación Logística
+          <div className="space-y-2 sm:space-y-3">
+            <h3 className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-50 pb-1.5">
+              <Box size={12} className="text-blue-500" /> Buscar Producto
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1 ml-1 uppercase">Área</label>
-                <select required disabled={readOnly} className={inputClass} value={formData.area_id}
-                  onChange={e => setFormData({...formData, area_id: e.target.value})}>
-                  <option value="">Seleccione...</option>
-                  {catalogs.areas.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
-                </select>
+            <div className="relative">
+              <label className="block text-[9px] font-bold text-slate-500 mb-1 ml-1 uppercase">Producto</label>
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                <input
+                  type="text"
+                  disabled={readOnly}
+                  className={`${inputClass} pl-9 ${readOnly ? '' : 'cursor-pointer'}`}
+                  value={productoSearch}
+                  placeholder="Buscar producto por marca, referencia o serial..."
+                  onChange={e => {
+                    setProductoSearch(e.target.value);
+                    if (!e.target.value) {
+                      setProductos([]);
+                    }
+                  }}
+                />
               </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1 ml-1 uppercase">Empresa</label>
-                <select required disabled={readOnly} className={inputClass} value={formData.empresa_id}
-                  onChange={e => setFormData({...formData, empresa_id: e.target.value})}>
-                  <option value="">Seleccione...</option>
-                  {catalogs.empresas.map(emp => <option key={emp.id} value={emp.id}>{emp.nombre}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1 ml-1 uppercase">Ciudad</label>
-                <select required disabled={readOnly} className={inputClass} value={formData.ciudad_id}
-                  onChange={e => setFormData({...formData, ciudad_id: e.target.value})}>
-                  <option value="">Seleccione...</option>
-                  {catalogs.ciudades.map(city => <option key={city.id} value={city.id}>{city.nombre}</option>)}
-                </select>
-              </div>
+              
+              {/* Dropdown de resultados de búsqueda */}
+              {!readOnly && productos.length > 0 && productoSearch && (
+                <div className="absolute z-10 w-full mt-2 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                  {productos.map(prod => (
+                    <button
+                      key={prod.id}
+                      type="button"
+                      onClick={() => handleProductoSelect(prod)}
+                      className="w-full px-4 py-3 text-left hover:bg-blue-50 transition-colors cursor-pointer"
+                    >
+                      <div className="font-bold text-slate-800">
+                        {prod.marca} {prod.referencia ? `- ${prod.referencia}` : ''}
+                      </div>
+                      <div className="text-xs text-slate-500">
+                        {prod.serial && `S/N: ${prod.serial}`}
+                        {prod.serial && prod.tipo?.nombre && ' · '}
+                        {prod.tipo?.nombre && `Tipo: ${prod.tipo.nombre}`}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+              
+              
+              {/* Lista de productos seleccionados */}
+              {selectedProductos.length > 0 && (
+                <div className="mt-3 space-y-2">
+                  <label className="block text-[9px] font-bold text-slate-500 mb-1 ml-1 uppercase">
+                    Productos Seleccionados ({selectedProductos.length})
+                  </label>
+                  {selectedProductos.map(prod => (
+                    <div key={prod.id} className="p-3 bg-blue-50 rounded-lg border border-blue-100 text-xs flex justify-between items-start">
+                      <div className="flex-1">
+                        <div className="font-bold text-blue-900">{prod.marca} {prod.referencia}</div>
+                        <div className="text-blue-700 mt-1 space-y-0.5">
+                          {prod.serial && <div>Serial: {prod.serial}</div>}
+                          {prod.memoria_ram && <div>RAM: {prod.memoria_ram}</div>}
+                          {prod.disco_duro && <div>Disco: {prod.disco_duro}</div>}
+                          {prod.tipo?.nombre && <div>Tipo: {prod.tipo.nombre}</div>}
+                        </div>
+                      </div>
+                      {!readOnly && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveProducto(prod.id)}
+                          className="ml-2 p-1.5 hover:bg-red-100 text-red-500 rounded transition-colors cursor-pointer"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="space-y-4">
-            <h3 className="flex items-center gap-2 text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-50 pb-2">
-              <Box size={16} className="text-blue-500" /> Especificaciones del Equipo
+          <div className="space-y-2 sm:space-y-3">
+            <h3 className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-50 pb-1.5">
+              Información Adicional
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1 ml-1 uppercase">Tipo</label>
-                <select required disabled={readOnly} className={inputClass} value={formData.equipo_id}
-                  onChange={e => setFormData({...formData, equipo_id: e.target.value})}>
-                  <option value="">Seleccione...</option>
-                  {catalogs.equipos.map(eq => <option key={eq.id} value={eq.id}>{eq.nombre}</option>)}
+                <label className="block text-[9px] font-bold text-slate-500 mb-1 ml-1 uppercase">Sede</label>
+                <select
+                  className={inputClass}
+                  value={formData.sede_id}
+                  onChange={e => setFormData({...formData, sede_id: e.target.value})}
+                  disabled={readOnly}
+                >
+                  <option value="">Seleccione sede...</option>
+                  {ciudades.map(city => <option key={city.id} value={city.id}>{city.nombre}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1 ml-1 uppercase">Marca</label>
-                <input required type="text" disabled={readOnly} className={inputClass} value={formData.marca}
-                  placeholder="HP, Dell..." onChange={e => setFormData({...formData, marca: e.target.value})} />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1 ml-1 uppercase">Cant.</label>
-                <input required type="number" disabled={readOnly} className={inputClass} value={formData.cantidad}
-                  onChange={e => setFormData({...formData, cantidad: e.target.value})} />
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1 ml-1 uppercase">Quién Entrega</label>
-                <input required type="text" disabled={readOnly} className={inputClass} value={formData.quien_entrega}
-                  onChange={e => setFormData({...formData, quien_entrega: e.target.value})} />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1 ml-1 uppercase">Características</label>
-                <textarea disabled={readOnly} className={inputClass} value={formData.caracteristicas}
-                  onChange={e => setFormData({...formData, caracteristicas: e.target.value})}></textarea>
+                <label className="block text-[9px] font-bold text-slate-500 mb-1 ml-1 uppercase">Quién Entrega</label>
+                <input
+                  type="text"
+                  disabled={readOnly}
+                  className={inputClass}
+                  value={formData.quien_entrega}
+                  placeholder="Nombre de quien entrega..."
+                  onChange={e => setFormData({...formData, quien_entrega: e.target.value})}
+                />
               </div>
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-500 mb-1 ml-1 uppercase">Observación</label>
+              <label className="block text-[9px] font-bold text-slate-500 mb-1 ml-1 uppercase">Observación</label>
               <textarea
                 disabled={readOnly}
                 className={inputClass}
@@ -223,13 +437,22 @@ export default function InventoryModal({ isOpen, onClose, onSave, initialData, r
         </form>
 
         {/* FOOTER */}
-        <div className="p-6 border-t border-slate-100 bg-white flex justify-end gap-3 shrink-0">
-          <button type="button" onClick={onClose} className="px-6 py-3 rounded-xl text-slate-400 font-bold hover:bg-slate-50 transition-all text-[11px] uppercase">
+        <div className="p-3 sm:p-4 border-t border-slate-100 bg-white flex justify-end gap-2 shrink-0">
+          <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg text-slate-400 font-bold hover:bg-slate-50 transition-all text-[10px] uppercase cursor-pointer">
             {readOnly ? 'Cerrar' : 'Cancelar'}
           </button>
           {!readOnly && (
-            <button type="submit" form="inventory-form" className="flex items-center gap-2 px-10 py-3 rounded-xl bg-blue-600 text-white font-black hover:bg-blue-700 shadow-xl transition-all text-[11px] uppercase">
-              <Save size={18} /> {initialData ? 'Actualizar Activo' : 'Guardar Activo'}
+            <button
+              type="submit"
+              form="inventory-form"
+              disabled={!formData.empleado_id || selectedProductos.length === 0}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg font-black shadow-lg transition-all text-[10px] uppercase ${
+                !formData.empleado_id || selectedProductos.length === 0
+                  ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
+                  : 'bg-blue-600 text-white hover:bg-blue-700 cursor-pointer'
+              }`}
+            >
+              <Save size={14} /> {initialData ? 'Actualizar' : 'Guardar'}
             </button>
           )}
         </div>
