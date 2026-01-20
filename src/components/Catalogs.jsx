@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Plus, Building2, MapPin, Briefcase } from 'lucide-react';
 
-const API_BASE_URL = 'https://molinos-inventario-back.onrender.com';
-// const API_BASE_URL = 'http://localhost:8000';
+//const API_BASE_URL = 'https://molinos-inventario-back.onrender.com';
+ const API_BASE_URL = 'http://localhost:8000';
 
 export default function Catalogs() {
   const [nombre, setNombre] = useState('');

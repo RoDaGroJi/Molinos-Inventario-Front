@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save, Search, UserPlus, Box, Trash2, Plus } from 'lucide-react';
 
-const API_BASE_URL = 'https://molinos-inventario-back.onrender.com';
-// const API_BASE_URL = 'http://localhost:8000';
+//const API_BASE_URL = 'https://molinos-inventario-back.onrender.com';
+ const API_BASE_URL = 'http://localhost:8000';
 
 export default function InventoryModal({ isOpen, onClose, onSave, initialData, readOnly }) {
   const [formData, setFormData] = useState({
