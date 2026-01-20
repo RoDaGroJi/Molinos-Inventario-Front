@@ -4,8 +4,8 @@ import {
   ShieldCheck, X, Save, Users, Laptop
 } from 'lucide-react';
 
-//const API_BASE_URL = 'https://molinos-inventario-back.onrender.com';
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = 'https://molinos-inventario-back.onrender.com';
+//const API_BASE_URL = 'http://localhost:8000';
 
 const authHeaders = () => ({
   Authorization: `Bearer ${localStorage.getItem('token')}`,
