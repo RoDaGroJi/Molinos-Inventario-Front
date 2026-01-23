@@ -68,10 +68,31 @@ export default function Dashboard({ onLogout }) {
     setIsSidebarOpen(false);
   }, [view]);
 
-  const filteredInventory = inventory.filter(item =>
-    item.empleado?.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) &&
-    item.is_active !== false
-  );
+  // FILTRO MEJORADO: mostrar todos los registros activos si search vacío, o filtrar multi-campo si searchTerm
+  const filteredInventory = React.useMemo(() => {
+    if (!searchTerm.trim()) {
+      // Si no hay término de búsqueda, mostrar todos los activos
+      return inventory.filter(item => item.is_active !== false);
+    }
+    // Convertir a minúsculas para comparar
+    const term = searchTerm.toLowerCase();
+
+    return inventory.filter(item => {
+      if (item.is_active === false) return false;
+      // Buscar coincidencias en múltiples campos útiles
+      return (
+        (item.empleado?.nombre?.toLowerCase().includes(term) || '') ||
+        (item.empleado?.cargo?.nombre?.toLowerCase().includes(term) || '') ||
+        (item.producto?.marca?.toLowerCase().includes(term) || '') ||
+        (item.producto?.referencia?.toLowerCase().includes(term) || '') ||
+        (item.producto?.serial?.toLowerCase().includes(term) || '') ||
+        (item.producto?.tipo?.nombre?.toLowerCase().includes(term) || '') ||
+        (item.empleado?.area?.nombre?.toLowerCase().includes(term) || '') ||
+        (item.sede?.nombre?.toLowerCase().includes(term) || '') ||
+        (item.empleado?.ciudad?.nombre?.toLowerCase().includes(term) || '')
+      );
+    });
+  }, [inventory, searchTerm]);
 
   // const totalPages = Math.ceil(totalItems / pageSize);
 
