@@ -6,6 +6,10 @@ import {
   UserPlus, Box as BoxIcon, FileText, Download
 } from 'lucide-react';
 import InventoryModal from './InventoryModal';
+import UserAdmin from './UserAdmin';
+import Catalogs from './Catalogs';
+import EmpleadosView from './EmpleadosView';
+import ProductosView from './ProductosView';
 
 const API_BASE_URL = 'https://molinos-inventario-back.onrender.com';
 // const API_BASE_URL = 'http://localhost:8000';
