@@ -564,7 +564,7 @@ export default function Dashboard({ onLogout }) {
           </div>
         )}
         {view === 'users' && isAdmin && <UserAdmin />}
-        {view === 'catalogs' && isAdmin && <CatalogsView />}
+        {view === 'catalogs' && isAdmin && <Catalogs />}
         {view === 'empleados' && isAdmin && <EmpleadosView />}
         {view === 'productos' && isAdmin && <ProductosView />}
       </main>
