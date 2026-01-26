@@ -189,6 +189,64 @@ export default function Dashboard({ onLogout }) {
   return (
     <div className="flex min-h-screen bg-[#f8fafc]">
       {/* SIDEBAR OMITIDA (SE MANTIENE IGUAL) */}
+      <aside className="fixed left-0 top-0 h-screen w-72 bg-white shadow-xl border-r border-slate-200 z-40">
+        <div className="p-6 font-black text-xl border-b">Inventario</div>
+
+        <nav className="p-4 space-y-2">
+          <button
+            onClick={() => setView("inventory")}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold
+        ${view === "inventory" ? "bg-blue-600 text-white" : "hover:bg-slate-100"}`}
+          >
+            <Package /> Inventario
+          </button>
+
+          {isAdmin && (
+            <>
+              <button
+                onClick={() => setView("empleados")}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold
+            ${view === "empleados" ? "bg-blue-600 text-white" : "hover:bg-slate-100"}`}
+              >
+                <Users /> Empleados
+              </button>
+
+              <button
+                onClick={() => setView("productos")}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold
+            ${view === "productos" ? "bg-blue-600 text-white" : "hover:bg-slate-100"}`}
+              >
+                <BoxIcon /> Productos
+              </button>
+
+              <button
+                onClick={() => setView("catalogs")}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold
+            ${view === "catalogs" ? "bg-blue-600 text-white" : "hover:bg-slate-100"}`}
+              >
+                <Settings /> Catálogos
+              </button>
+
+              <button
+                onClick={() => setView("users")}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold
+            ${view === "users" ? "bg-blue-600 text-white" : "hover:bg-slate-100"}`}
+              >
+                <ShieldCheck /> Usuarios
+              </button>
+            </>
+          )}
+
+          <hr className="my-4" />
+
+          <button
+            onClick={onLogout}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-red-600 hover:bg-red-50"
+          >
+            <LogOut /> Cerrar sesión
+          </button>
+        </nav>
+      </aside>
 
       <main className="flex-1 p-6 lg:ml-72">
         {view === "inventory" && (
