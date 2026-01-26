@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import {
   Plus,
+  X,
+  Eye,
+  Pencil,
+  Power,
   Building2,
   MapPin,
   Briefcase,
   Laptop,
-  X,
   CheckCircle,
   AlertTriangle,
 } from 'lucide-react';
@@ -18,58 +21,39 @@ const authHeaders = () => ({
 });
 
 const CATALOGS = {
-  areas: {
-    label: 'Áreas',
-    icon: MapPin,
-    endpoint: 'areas',
-  },
-  empresas: {
-    label: 'Empresas',
-    icon: Building2,
-    endpoint: 'empresas',
-  },
-  cargos: {
-    label: 'Cargos',
-    icon: Briefcase,
-    endpoint: 'cargos',
-  },
-  equipo_tipos: {
-    label: 'Tipos de Equipo',
-    icon: Laptop,
-    endpoint: 'equipo_tipos',
-  },
+  areas: { label: 'Áreas', icon: MapPin },
+  empresas: { label: 'Empresas', icon: Building2 },
+  cargos: { label: 'Cargos', icon: Briefcase },
+  equipo_tipos: { label: 'Tipos de Equipo', icon: Laptop },
 };
 
 export default function Catalogs() {
-  /* =========================
-     STATE
-  ========================== */
+  /* ===================== STATE ===================== */
   const [tipo, setTipo] = useState('areas');
-  const [nombre, setNombre] = useState('');
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [messageModal, setMessageModal] = useState({
+  const [modal, setModal] = useState({
     open: false,
-    type: 'success',
-    message: '',
+    mode: 'create', // create | view | edit
+    item: null,
   });
 
-  /* =========================
-     EFFECTS
-  ========================== */
+  const [nombre, setNombre] = useState('');
+  const [isActive, setIsActive] = useState(true);
+
+  const [message, setMessage] = useState(null);
+
+  /* ===================== EFFECTS ===================== */
   useEffect(() => {
-    fetchItems();
+    loadItems();
   }, [tipo]);
 
-  /* =========================
-     DATA
-  ========================== */
-  const fetchItems = async () => {
+  /* ===================== DATA ===================== */
+  const loadItems = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/${CATALOGS[tipo].endpoint}/`, {
+      const res = await fetch(`${API_BASE_URL}/${tipo}/`, {
         headers: authHeaders(),
       });
       if (res.ok) setItems(await res.json());
@@ -78,59 +62,92 @@ export default function Catalogs() {
     }
   };
 
-  /* =========================
-     HELPERS
-  ========================== */
-  const showMessage = (type, message) => {
-    setMessageModal({ open: true, type, message });
+  /* ===================== HELPERS ===================== */
+  const openModal = (mode, item = null) => {
+    setModal({ open: true, mode, item });
+    setNombre(item?.nombre || '');
+    setIsActive(item?.is_active ?? true);
   };
 
-  /* =========================
-     CRUD
-  ========================== */
-  const handleSave = async (e) => {
-    e.preventDefault();
+  const closeModal = () => {
+    setModal({ open: false, mode: 'create', item: null });
+    setNombre('');
+    setIsActive(true);
+  };
 
+  const showMessage = (type, text) =>
+    setMessage({ type, text });
+
+  /* ===================== ACTIONS ===================== */
+  const handleCreate = async (e) => {
+    e.preventDefault();
+    const res = await fetch(`${API_BASE_URL}/${tipo}/`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ nombre }),
+    });
+
+    if (res.ok) {
+      showMessage('success', 'Registro creado correctamente');
+      closeModal();
+      loadItems();
+    } else {
+      showMessage('error', 'Error al crear');
+    }
+  };
+
+  const handleUpdate = async (e) => {
+    e.preventDefault();
     const res = await fetch(
-      `${API_BASE_URL}/${CATALOGS[tipo].endpoint}/`,
+      `${API_BASE_URL}/${tipo}/${modal.item.id}`,
       {
-        method: 'POST',
+        method: 'PUT',
         headers: authHeaders(),
-        body: JSON.stringify({ nombre }),
+        body: JSON.stringify({ nombre, is_active: isActive }),
       }
     );
 
     if (res.ok) {
-      showMessage('success', `${CATALOGS[tipo].label} creado correctamente`);
-      setNombre('');
-      setIsModalOpen(false);
-      fetchItems();
+      showMessage('success', 'Registro actualizado');
+      closeModal();
+      loadItems();
     } else {
-      const err = await res.json();
-      showMessage('error', err.detail || 'Error al guardar');
+      showMessage('error', 'Error al actualizar');
     }
+  };
+
+  const toggleStatus = async (item) => {
+    const res = await fetch(
+      `${API_BASE_URL}/${tipo}/${item.id}`,
+      {
+        method: 'PUT',
+        headers: authHeaders(),
+        body: JSON.stringify({
+          nombre: item.nombre,
+          is_active: !item.is_active,
+        }),
+      }
+    );
+
+    if (res.ok) loadItems();
   };
 
   const Icon = CATALOGS[tipo].icon;
 
-  /* =========================
-     RENDER
-  ========================== */
+  /* ===================== RENDER ===================== */
   return (
-    <div className="p-6 bg-white rounded-3xl shadow-xl">
+    <div className="bg-white p-6 rounded-3xl shadow-xl">
       {/* HEADER */}
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h2 className="text-3xl font-black text-slate-900">
-            Catálogos
-          </h2>
-          <p className="text-xs text-slate-400 font-black uppercase tracking-widest">
-            Configuración del sistema
+          <h2 className="text-3xl font-black">Catálogos</h2>
+          <p className="text-xs uppercase text-slate-400 font-bold">
+            Configuración general
           </p>
         </div>
         <button
-          onClick={() => setIsModalOpen(true)}
-          className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-black shadow-lg hover:bg-blue-700 transition-all flex items-center gap-2"
+          onClick={() => openModal('create')}
+          className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-black flex items-center gap-2"
         >
           <Plus size={18} /> Nuevo
         </button>
@@ -140,15 +157,14 @@ export default function Catalogs() {
       <div className="flex gap-3 mb-6">
         {Object.entries(CATALOGS).map(([key, cfg]) => {
           const BtnIcon = cfg.icon;
-          const active = tipo === key;
           return (
             <button
               key={key}
               onClick={() => setTipo(key)}
-              className={`flex items-center gap-2 px-4 py-3 rounded-2xl font-black transition-all ${
-                active
-                  ? 'bg-blue-600 text-white shadow-lg'
-                  : 'bg-slate-50 text-slate-500 hover:bg-slate-100'
+              className={`px-4 py-3 rounded-2xl font-black flex gap-2 items-center ${
+                tipo === key
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-slate-100 text-slate-500'
               }`}
             >
               <BtnIcon size={18} />
@@ -159,85 +175,131 @@ export default function Catalogs() {
       </div>
 
       {/* LIST */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="space-y-3">
         {items.map((item) => (
           <div
             key={item.id}
-            className="flex items-center gap-4 p-4 rounded-2xl border border-slate-100 bg-slate-50"
+            className={`flex justify-between items-center p-4 rounded-2xl border ${
+              item.is_active
+                ? 'bg-white'
+                : 'bg-slate-50 opacity-60'
+            }`}
           >
-            <div className="h-10 w-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center">
-              <Icon size={18} />
+            <div className="flex gap-4 items-center">
+              <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600">
+                <Icon size={18} />
+              </div>
+              <div>
+                <p className="font-bold">{item.nombre}</p>
+                <p className="text-xs text-slate-400">
+                  {item.is_active ? 'Activo' : 'Inactivo'}
+                </p>
+              </div>
             </div>
-            <div className="font-bold text-slate-700">
-              {item.nombre}
+
+            <div className="flex gap-3">
+              <button onClick={() => openModal('view', item)}>
+                <Eye />
+              </button>
+              <button onClick={() => openModal('edit', item)}>
+                <Pencil />
+              </button>
+              <button onClick={() => toggleStatus(item)}>
+                <Power
+                  className={
+                    item.is_active
+                      ? 'text-red-500'
+                      : 'text-green-500'
+                  }
+                />
+              </button>
             </div>
           </div>
         ))}
 
         {!loading && items.length === 0 && (
-          <div className="col-span-full text-center text-slate-400 font-bold py-10">
+          <p className="text-center text-slate-400 py-8">
             No hay registros
-          </div>
+          </p>
         )}
       </div>
 
-      {/* MODAL CREATE */}
-      {isModalOpen && (
+      {/* MODAL */}
+      {modal.open && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
           <div className="bg-white rounded-3xl p-6 w-full max-w-md">
             <div className="flex justify-between mb-4">
-              <h3 className="text-xl font-black">
-                Nuevo {CATALOGS[tipo].label}
+              <h3 className="text-xl font-black capitalize">
+                {modal.mode} {CATALOGS[tipo].label}
               </h3>
-              <button onClick={() => setIsModalOpen(false)}>
+              <button onClick={closeModal}>
                 <X />
               </button>
             </div>
 
-            <form onSubmit={handleSave} className="space-y-4">
+            <form
+              onSubmit={
+                modal.mode === 'edit'
+                  ? handleUpdate
+                  : handleCreate
+              }
+              className="space-y-4"
+            >
               <input
-                required
+                disabled={modal.mode === 'view'}
                 value={nombre}
                 onChange={(e) => setNombre(e.target.value)}
-                placeholder="Nombre"
-                className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full bg-slate-50 rounded-xl p-3"
+                required
               />
 
-              <div className="flex justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-5 py-2 rounded-xl text-slate-400 font-bold"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="bg-blue-600 text-white px-6 py-2 rounded-xl font-black"
-                >
-                  Guardar
-                </button>
-              </div>
+              {modal.mode !== 'create' && (
+                <label className="flex items-center gap-3 font-bold">
+                  <input
+                    type="checkbox"
+                    checked={isActive}
+                    disabled={modal.mode === 'view'}
+                    onChange={() => setIsActive(!isActive)}
+                  />
+                  Activo
+                </label>
+              )}
+
+              {modal.mode !== 'view' && (
+                <div className="flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={closeModal}
+                    className="font-bold text-slate-400"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="bg-blue-600 text-white px-6 py-2 rounded-xl font-black"
+                  >
+                    Guardar
+                  </button>
+                </div>
+              )}
             </form>
           </div>
         </div>
       )}
 
-      {/* MESSAGE MODAL */}
-      {messageModal.open && (
+      {/* MESSAGE */}
+      {message && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-6 max-w-sm text-center">
-            {messageModal.type === 'success' ? (
+          <div className="bg-white p-6 rounded-2xl text-center">
+            {message.type === 'success' ? (
               <CheckCircle className="mx-auto text-green-500" size={40} />
             ) : (
               <AlertTriangle className="mx-auto text-red-500" size={40} />
             )}
-            <p className="mt-4 font-medium">
-              {messageModal.message}
-            </p>
+            <p className="mt-4">{message.text}</p>
             <button
               className="mt-6 bg-blue-600 text-white px-6 py-2 rounded-xl"
-              onClick={() => setMessageModal({ open: false })}
+              onClick={() => setMessage(null)}
             >
               Aceptar
             </button>
