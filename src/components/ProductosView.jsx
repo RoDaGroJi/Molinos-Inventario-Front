@@ -303,50 +303,89 @@ export default function ProductosView() {
             </div>
 
             <form onSubmit={handleSave} className="grid grid-cols-2 gap-4">
-              <select
-                required
-                disabled={isReadOnly}
-                value={formData.tipo_producto_id}
-                onChange={e => setFormData({ ...formData, tipo_producto_id: e.target.value })}
-              >
-                <option value="">Tipo</option>
-                {catalogs.tipos.map(t => (
-                  <option key={t.id} value={t.id}>{t.nombre}</option>
-                ))}
-              </select>
 
-              <input
-                required
-                disabled={isReadOnly}
-                placeholder="Marca"
-                value={formData.marca}
-                onChange={e => setFormData({ ...formData, marca: e.target.value })}
-              />
+  {/* TIPO */}
+  <select
+    required
+    disabled={isReadOnly}
+    value={formData.tipo_id}
+    onChange={e => setFormData({ ...formData, tipo_id: e.target.value })}
+    className="border rounded-xl px-4 py-2"
+  >
+    <option value="">Tipo de equipo</option>
+    {catalogs.tipos.map(t => (
+      <option key={t.id} value={t.id}>{t.nombre}</option>
+    ))}
+  </select>
 
-              <input
-                required
-                disabled={isReadOnly}
-                placeholder="Serial"
-                value={formData.serial}
-                onChange={e => setFormData({ ...formData, serial: e.target.value })}
-              />
+  {/* MARCA */}
+  <input
+    required
+    disabled={isReadOnly}
+    placeholder="Marca"
+    value={formData.marca}
+    onChange={e => setFormData({ ...formData, marca: e.target.value })}
+    className="border rounded-xl px-4 py-2"
+  />
 
-              <input
-                disabled={isReadOnly}
-                placeholder="Referencia"
-                value={formData.referencia}
-                onChange={e => setFormData({ ...formData, referencia: e.target.value })}
-              />
+  {/* SERIAL */}
+  <input
+    required
+    disabled={isReadOnly}
+    placeholder="Serial"
+    value={formData.serial}
+    onChange={e => setFormData({ ...formData, serial: e.target.value })}
+    className="border rounded-xl px-4 py-2"
+  />
 
-              {!isReadOnly && (
-                <div className="col-span-2 flex justify-end gap-3 mt-4">
-                  <button type="button" onClick={() => setIsModalOpen(false)}>Cancelar</button>
-                  <button type="submit" className="bg-blue-600 text-white px-6 py-2 rounded-xl">
-                    <Save /> Guardar
-                  </button>
-                </div>
-              )}
-            </form>
+  {/* REFERENCIA */}
+  <input
+    disabled={isReadOnly}
+    placeholder="Referencia / Modelo"
+    value={formData.referencia}
+    onChange={e => setFormData({ ...formData, referencia: e.target.value })}
+    className="border rounded-xl px-4 py-2"
+  />
+
+  {/* MEMORIA RAM */}
+  <input
+    disabled={isReadOnly}
+    placeholder="Memoria RAM (ej: 8 GB)"
+    value={formData.memoria_ram}
+    onChange={e => setFormData({ ...formData, memoria_ram: e.target.value })}
+    className="border rounded-xl px-4 py-2"
+  />
+
+  {/* DISCO DURO */}
+  <input
+    disabled={isReadOnly}
+    placeholder="Disco duro (ej: 256 GB SSD)"
+    value={formData.disco_duro}
+    onChange={e => setFormData({ ...formData, disco_duro: e.target.value })}
+    className="border rounded-xl px-4 py-2"
+  />
+
+  {/* BOTONES */}
+  {!isReadOnly && (
+    <div className="col-span-2 flex justify-end gap-3 mt-6">
+      <button
+        type="button"
+        onClick={() => setIsModalOpen(false)}
+        className="px-4 py-2 border rounded-xl"
+      >
+        Cancelar
+      </button>
+      <button
+        type="submit"
+        className="bg-blue-600 text-white px-6 py-2 rounded-xl flex items-center gap-2"
+      >
+        <Save size={18} /> Guardar
+      </button>
+    </div>
+  )}
+
+</form>
+
           </div>
         </div>
       )}
