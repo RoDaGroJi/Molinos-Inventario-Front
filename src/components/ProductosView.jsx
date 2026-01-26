@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Package, Search, RefreshCw, PlusCircle, Edit3, Eye,
-  Trash2, ShieldCheck, X, Save, Laptop, AlertTriangle, CheckCircle
+  RefreshCw, PlusCircle, Edit3, Eye,
+  Trash2, ShieldCheck, X, Save,
+  AlertTriangle, CheckCircle
 } from 'lucide-react';
 
 const API_BASE_URL = 'https://molinos-inventario-back.onrender.com';
 // const API_BASE_URL = 'http://localhost:8000';
 
 const authHeaders = () => ({
-  Authorization: `Bearer ${localStorage.getItem('token')}`,
+  Authorization: `Bearer ${localStorage.getItem('token')}`
 });
 
 export default function ProductosView() {
+
   /* =========================
      STATES
   ========================== */
@@ -25,11 +27,10 @@ export default function ProductosView() {
   const [isReadOnly, setIsReadOnly] = useState(false);
 
   const [formData, setFormData] = useState({
-    tipo_producto_id: '',
+    tipo_id: '',
     marca: '',
     referencia: '',
-    ram: '',
-    procesador: '',
+    memoria_ram: '',
     disco_duro: '',
     serial: ''
   });
@@ -43,7 +44,7 @@ export default function ProductosView() {
 
   const [messageModal, setMessageModal] = useState({
     open: false,
-    type: 'success', // success | error
+    type: 'success',
     message: ''
   });
 
@@ -88,11 +89,10 @@ export default function ProductosView() {
   ========================== */
   const resetForm = () => {
     setFormData({
-      tipo_producto_id: '',
+      tipo_id: '',
       marca: '',
       referencia: '',
-      ram: '',
-      procesador: '',
+      memoria_ram: '',
       disco_duro: '',
       serial: ''
     });
@@ -111,7 +111,7 @@ export default function ProductosView() {
       !q ||
       p.marca?.toLowerCase().includes(q) ||
       p.serial?.toLowerCase().includes(q) ||
-      p.tipo_producto?.nombre?.toLowerCase().includes(q)
+      p.tipo?.nombre?.toLowerCase().includes(q)
     );
   });
 
@@ -135,11 +135,10 @@ export default function ProductosView() {
           ...authHeaders()
         },
         body: JSON.stringify({
-          tipo_producto_id: Number(formData.tipo_producto_id),
+          tipo_id: Number(formData.tipo_id),
           marca: formData.marca,
           referencia: formData.referencia || null,
-          ram: formData.ram || null,
-          procesador: formData.procesador || null,
+          memoria_ram: formData.memoria_ram || null,
           disco_duro: formData.disco_duro || null,
           serial: formData.serial
         })
@@ -150,8 +149,11 @@ export default function ProductosView() {
         throw new Error(err.detail || 'Error al guardar');
       }
 
-      showMessage('success',
-        editingProducto ? 'Producto actualizado correctamente' : 'Producto creado correctamente'
+      showMessage(
+        'success',
+        editingProducto
+          ? 'Producto actualizado correctamente'
+          : 'Producto creado correctamente'
       );
 
       setIsModalOpen(false);
@@ -168,7 +170,7 @@ export default function ProductosView() {
     setConfirmModal({
       open: true,
       title: 'Retirar producto',
-      message: '¿Está seguro de retirar este producto del inventario?',
+      message: '¿Está seguro de retirar este producto?',
       onConfirm: async () => {
         await fetch(`${API_BASE_URL}/productos/${id}/retirar`, {
           method: 'PATCH',
@@ -184,7 +186,7 @@ export default function ProductosView() {
     setConfirmModal({
       open: true,
       title: 'Activar producto',
-      message: '¿Desea activar nuevamente este producto?',
+      message: '¿Desea activar este producto nuevamente?',
       onConfirm: async () => {
         await fetch(`${API_BASE_URL}/productos/${id}/activar`, {
           method: 'PATCH',
@@ -202,11 +204,10 @@ export default function ProductosView() {
   const openModal = (producto = null, readOnly = false) => {
     if (producto) {
       setFormData({
-        tipo_producto_id: producto.tipo_producto?.id || '',
+        tipo_id: producto.tipo?.id || '',
         marca: producto.marca || '',
         referencia: producto.referencia || '',
-        ram: producto.ram || '',
-        procesador: producto.procesador || '',
+        memoria_ram: producto.memoria_ram || '',
         disco_duro: producto.disco_duro || '',
         serial: producto.serial || ''
       });
@@ -240,9 +241,9 @@ export default function ProductosView() {
           </button>
           <button
             onClick={() => openModal()}
-            className="bg-blue-600 text-white px-4 py-2 rounded-xl"
+            className="bg-blue-600 text-white px-4 py-2 rounded-xl flex items-center gap-2"
           >
-            <PlusCircle /> Nuevo
+            <PlusCircle size={18} /> Nuevo
           </button>
         </div>
       </div>
@@ -262,13 +263,14 @@ export default function ProductosView() {
             return (
               <tr key={p.id} className={inactive ? 'bg-red-50' : 'hover:bg-slate-50'}>
                 <td className="py-3">
-                  <strong>{p.tipo_producto?.nombre}</strong>
+                  <strong>{p.tipo?.nombre}</strong>
                   <div className="text-xs">{p.marca}</div>
                   <div className="text-xs">Serial: {p.serial}</div>
                 </td>
-                <td className="text-sm">
-                  {p.ram && `RAM: ${p.ram} `}
-                  {p.procesador && `CPU: ${p.procesador}`}
+                <td className="text-sm text-slate-700">
+                  {p.memoria_ram && <div>RAM: {p.memoria_ram}</div>}
+                  {p.disco_duro && <div>Disco: {p.disco_duro}</div>}
+                  {p.referencia && <div className="text-xs text-slate-500">Ref: {p.referencia}</div>}
                 </td>
                 <td className="text-center">
                   <div className="flex justify-center gap-2">
