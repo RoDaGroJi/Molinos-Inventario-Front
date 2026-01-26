@@ -1,21 +1,38 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
-  Package, Users, Settings, LogOut, PlusCircle, Search,
-  ShieldCheck, Edit3, Eye, Trash2,
-  FileSpreadsheet, Upload, RefreshCw, Menu, X,
-  UserPlus, Box as BoxIcon, FileText, Download, AlertTriangle, CheckCircle
-} from 'lucide-react';
+  Package,
+  Users,
+  Settings,
+  LogOut,
+  PlusCircle,
+  Search,
+  ShieldCheck,
+  Edit3,
+  Eye,
+  Trash2,
+  FileSpreadsheet,
+  Upload,
+  RefreshCw,
+  Menu,
+  X,
+  UserPlus,
+  Box as BoxIcon,
+  FileText,
+  Download,
+  AlertTriangle,
+  CheckCircle,
+} from "lucide-react";
 
-import InventoryModal from './InventoryModal';
-import UserAdmin from './UserAdmin';
-import Catalogs from './Catalogs';
-import EmpleadosView from './EmpleadosView';
-import ProductosView from './ProductosView';
+import InventoryModal from "./InventoryModal";
+import UserAdmin from "./UserAdmin";
+import Catalogs from "./Catalogs";
+import EmpleadosView from "./EmpleadosView";
+import ProductosView from "./ProductosView";
 
-const API_BASE_URL = 'https://molinos-inventario-back.onrender.com';
+const API_BASE_URL = "https://molinos-inventario-back.onrender.com";
 
 const authHeaders = () => ({
-  Authorization: `Bearer ${localStorage.getItem('token')}`,
+  Authorization: `Bearer ${localStorage.getItem("token")}`,
 });
 
 /* ======================================================
@@ -24,10 +41,11 @@ const authHeaders = () => ({
 const MessageModal = ({ type, message, onClose }) => (
   <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
     <div className="bg-white rounded-2xl p-6 text-center max-w-sm w-full">
-      {type === 'success'
-        ? <CheckCircle className="mx-auto text-green-500" size={40} />
-        : <AlertTriangle className="mx-auto text-red-500" size={40} />
-      }
+      {type === "success" ? (
+        <CheckCircle className="mx-auto text-green-500" size={40} />
+      ) : (
+        <AlertTriangle className="mx-auto text-red-500" size={40} />
+      )}
       <p className="mt-4 font-medium">{message}</p>
       <button
         onClick={onClose}
@@ -65,8 +83,8 @@ const ConfirmModal = ({ title, message, onConfirm, onCancel }) => (
 ====================================================== */
 export default function Dashboard({ onLogout }) {
   const [inventory, setInventory] = useState([]);
-  const [view, setView] = useState('inventory');
-  const [searchTerm, setSearchTerm] = useState('');
+  const [view, setView] = useState("inventory");
+  const [searchTerm, setSearchTerm] = useState("");
   const [currentUser, setCurrentUser] = useState(null);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -83,7 +101,7 @@ export default function Dashboard({ onLogout }) {
   /* ===================== DATA ===================== */
   useEffect(() => {
     fetch(`${API_BASE_URL}/users/me`, { headers: authHeaders() })
-      .then(r => r.ok && r.json())
+      .then((r) => r.ok && r.json())
       .then(setCurrentUser);
   }, []);
 
@@ -95,38 +113,40 @@ export default function Dashboard({ onLogout }) {
   };
 
   useEffect(() => {
-    if (view === 'inventory') fetchInventory();
+    if (view === "inventory") fetchInventory();
   }, [view]);
 
   /* ===================== FILTER ===================== */
   const filteredInventory = useMemo(() => {
     if (!searchTerm.trim()) {
-      return inventory.filter(i => i.is_active !== false);
+      return inventory.filter((i) => i.is_active !== false);
     }
     const q = searchTerm.toLowerCase();
-    return inventory.filter(i =>
-      i.is_active !== false &&
-      (
-        i.empleado?.nombre?.toLowerCase().includes(q) ||
-        i.producto?.serial?.toLowerCase().includes(q) ||
-        i.producto?.marca?.toLowerCase().includes(q)
-      )
+    return inventory.filter(
+      (i) =>
+        i.is_active !== false &&
+        (i.empleado?.nombre?.toLowerCase().includes(q) ||
+          i.producto?.serial?.toLowerCase().includes(q) ||
+          i.producto?.marca?.toLowerCase().includes(q)),
     );
   }, [inventory, searchTerm]);
 
   /* ===================== ACTIONS ===================== */
   const handleRetirar = (id) => {
     setConfirmModal({
-      title: 'Retirar activo',
-      message: '¿Está seguro de retirar este activo del inventario?',
+      title: "Retirar activo",
+      message: "¿Está seguro de retirar este activo del inventario?",
       onConfirm: async () => {
         await fetch(`${API_BASE_URL}/inventory/${id}/retirar`, {
-          method: 'PATCH',
+          method: "PATCH",
           headers: authHeaders(),
         });
         setConfirmModal(null);
         fetchInventory();
-        setMessageModal({ type: 'success', message: 'Activo retirado correctamente' });
+        setMessageModal({
+          type: "success",
+          message: "Activo retirado correctamente",
+        });
       },
       onCancel: () => setConfirmModal(null),
     });
@@ -134,28 +154,31 @@ export default function Dashboard({ onLogout }) {
 
   const handleActivar = async (id) => {
     await fetch(`${API_BASE_URL}/inventory/${id}/activar`, {
-      method: 'PATCH',
+      method: "PATCH",
       headers: authHeaders(),
     });
     fetchInventory();
-    setMessageModal({ type: 'success', message: 'Activo reactivado correctamente' });
+    setMessageModal({
+      type: "success",
+      message: "Activo reactivado correctamente",
+    });
   };
 
   const handleDownloadPDF = async (id, tipo) => {
     const endpoint =
-      tipo === 'asignacion'
+      tipo === "asignacion"
         ? `${API_BASE_URL}/inventory/${id}/pdf-asignacion`
         : `${API_BASE_URL}/inventory/${id}/pdf-retiro`;
 
     const res = await fetch(endpoint, { headers: authHeaders() });
     if (!res.ok) {
-      setMessageModal({ type: 'error', message: 'Error al generar PDF' });
+      setMessageModal({ type: "error", message: "Error al generar PDF" });
       return;
     }
 
     const blob = await res.blob();
     const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = url;
     link.download = `Acta_${tipo}_${id}.pdf`;
     link.click();
@@ -165,21 +188,24 @@ export default function Dashboard({ onLogout }) {
   /* ===================== RENDER ===================== */
   return (
     <div className="flex min-h-screen bg-[#f8fafc]">
-
       {/* SIDEBAR OMITIDA (SE MANTIENE IGUAL) */}
 
       <main className="flex-1 p-6 lg:ml-72">
-        {view === 'inventory' && (
+        {view === "inventory" && (
           <>
             <div className="flex justify-between mb-6">
               <input
                 placeholder="Buscar..."
                 className="bg-white rounded-xl px-4 py-3 shadow-sm w-96"
                 value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
+                onChange={(e) => setSearchTerm(e.target.value)}
               />
               <button
-                onClick={() => { setEditingItem(null); setIsReadOnly(false); setIsModalOpen(true); }}
+                onClick={() => {
+                  setEditingItem(null);
+                  setIsReadOnly(false);
+                  setIsModalOpen(true);
+                }}
                 className="bg-blue-600 text-white px-6 py-3 rounded-xl font-black"
               >
                 <PlusCircle /> Nuevo
@@ -187,21 +213,82 @@ export default function Dashboard({ onLogout }) {
             </div>
 
             <table className="w-full bg-white rounded-2xl overflow-hidden shadow">
+              <thead className="bg-slate-100 text-left text-sm font-black text-slate-600">
+                <tr>
+                  <th className="p-4">Empleado</th>
+                  <th className="p-4">Cargo</th>
+                  <th className="p-4">Área</th>
+                  <th className="p-4">Marca</th>
+                  <th className="p-4">Referencia</th>
+                  <th className="p-4">Serial</th>
+                  <th className="p-4">Sede</th>
+                  <th className="p-4">Estado</th>
+                  <th className="p-4">Acciones</th>
+                </tr>
+              </thead>
+
               <tbody>
-                {filteredInventory.map(item => (
-                  <tr key={item.id} className="border-b">
+                {filteredInventory.map((item) => (
+                  <tr key={item.id} className="border-b hover:bg-slate-50">
                     <td className="p-4 font-bold">{item.empleado?.nombre}</td>
+
+                    <td className="p-4">{item.empleado?.cargo?.nombre}</td>
+
+                    <td className="p-4">{item.empleado?.area?.nombre}</td>
+
                     <td className="p-4">{item.producto?.marca}</td>
-                    <td className="p-4 flex gap-2">
-                      <button onClick={() => handleDownloadPDF(item.id, 'asignacion')}><FileText /></button>
-                      <button onClick={() => { setEditingItem(item); setIsReadOnly(true); setIsModalOpen(true); }}><Eye /></button>
-                      {isAdmin && (
-                        item.is_active === false ? (
-                          <button onClick={() => handleActivar(item.id)}><ShieldCheck /></button>
-                        ) : (
-                          <button onClick={() => handleRetirar(item.id)}><Trash2 /></button>
-                        )
+
+                    <td className="p-4">{item.producto?.referencia}</td>
+
+                    <td className="p-4 font-mono text-sm">
+                      {item.producto?.serial}
+                    </td>
+
+                    <td className="p-4">{item.sede?.nombre}</td>
+
+                    <td className="p-4">
+                      {item.is_active ? (
+                        <span className="text-green-600 font-bold">ACTIVO</span>
+                      ) : (
+                        <span className="text-red-600 font-bold">RETIRADO</span>
                       )}
+                    </td>
+
+                    <td className="p-4 flex gap-3">
+                      <button
+                        title="Acta asignación"
+                        onClick={() => handleDownloadPDF(item.id, "asignacion")}
+                      >
+                        <FileText />
+                      </button>
+
+                      <button
+                        title="Ver detalle"
+                        onClick={() => {
+                          setEditingItem(item);
+                          setIsReadOnly(true);
+                          setIsModalOpen(true);
+                        }}
+                      >
+                        <Eye />
+                      </button>
+
+                      {isAdmin &&
+                        (item.is_active ? (
+                          <button
+                            title="Retirar"
+                            onClick={() => handleRetirar(item.id)}
+                          >
+                            <Trash2 />
+                          </button>
+                        ) : (
+                          <button
+                            title="Reactivar"
+                            onClick={() => handleActivar(item.id)}
+                          >
+                            <ShieldCheck />
+                          </button>
+                        ))}
                     </td>
                   </tr>
                 ))}
@@ -210,10 +297,10 @@ export default function Dashboard({ onLogout }) {
           </>
         )}
 
-        {view === 'users' && isAdmin && <UserAdmin />}
-        {view === 'catalogs' && isAdmin && <Catalogs />}
-        {view === 'empleados' && isAdmin && <EmpleadosView />}
-        {view === 'productos' && isAdmin && <ProductosView />}
+        {view === "users" && isAdmin && <UserAdmin />}
+        {view === "catalogs" && isAdmin && <Catalogs />}
+        {view === "empleados" && isAdmin && <EmpleadosView />}
+        {view === "productos" && isAdmin && <ProductosView />}
       </main>
 
       <InventoryModal
@@ -228,15 +315,10 @@ export default function Dashboard({ onLogout }) {
       />
 
       {messageModal && (
-        <MessageModal
-          {...messageModal}
-          onClose={() => setMessageModal(null)}
-        />
+        <MessageModal {...messageModal} onClose={() => setMessageModal(null)} />
       )}
 
-      {confirmModal && (
-        <ConfirmModal {...confirmModal} />
-      )}
+      {confirmModal && <ConfirmModal {...confirmModal} />}
     </div>
   );
 }
