@@ -1,7 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-  Users, Search, RefreshCw, PlusCircle, Edit3, Eye, Trash2,
-  ShieldCheck, X, Save
+  Users,
+  Search,
+  RefreshCw,
+  PlusCircle,
+  Edit3,
+  Eye,
+  Trash2,
+  ShieldCheck,
+  X,
+  Save
 } from 'lucide-react';
 
 const API_BASE_URL = 'https://molinos-inventario-back.onrender.com';
@@ -11,33 +19,43 @@ const authHeaders = () => ({
 });
 
 export default function EmpleadosView() {
+  /* =========================
+     STATE
+  ========================== */
   const [empleados, setEmpleados] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingEmpleado, setEditingEmpleado] = useState(null);
-  const [isReadOnly, setIsReadOnly] = useState(false);
 
   const [catalogs, setCatalogs] = useState({
     cargos: [],
     areas: [],
     empresas: [],
-    ciudades: []
+    ciudades: [],
   });
 
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingEmpleado, setEditingEmpleado] = useState(null);
+  const [isReadOnly, setIsReadOnly] = useState(false);
+
   const [formData, setFormData] = useState({
-    nombre_completo: '',
+    nombre: '',
     cargo_id: '',
     area_id: '',
     empresa_id: '',
-    sede_id: ''
+    ciudad_id: '',
   });
 
+  /* =========================
+     EFFECTS
+  ========================== */
   useEffect(() => {
     fetchEmpleados();
     fetchCatalogs();
   }, []);
 
+  /* =========================
+     DATA FETCH
+  ========================== */
   const fetchCatalogs = async () => {
     try {
       const headers = authHeaders();
@@ -45,17 +63,17 @@ export default function EmpleadosView() {
         fetch(`${API_BASE_URL}/cargos/`, { headers }),
         fetch(`${API_BASE_URL}/areas/`, { headers }),
         fetch(`${API_BASE_URL}/empresas/`, { headers }),
-        fetch(`${API_BASE_URL}/ciudades/`, { headers })
+        fetch(`${API_BASE_URL}/ciudades/`, { headers }),
       ]);
 
       setCatalogs({
         cargos: cargos.ok ? await cargos.json() : [],
         areas: areas.ok ? await areas.json() : [],
         empresas: empresas.ok ? await empresas.json() : [],
-        ciudades: ciudades.ok ? await ciudades.json() : []
+        ciudades: ciudades.ok ? await ciudades.json() : [],
       });
     } catch (error) {
-      console.error('Error cargando catálogos:', error);
+      console.error('Error cargando catálogos', error);
     }
   };
 
@@ -63,24 +81,32 @@ export default function EmpleadosView() {
     setLoading(true);
     try {
       const res = await fetch(`${API_BASE_URL}/empleados/`, {
-        headers: authHeaders()
+        headers: authHeaders(),
       });
-      if (res.ok) setEmpleados(await res.json());
+      if (res.ok) {
+        setEmpleados(await res.json());
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  const filteredEmpleados = empleados.filter(e => {
-    const q = search.toLowerCase().trim();
-    if (!q) return true;
+  /* =========================
+     FILTER
+  ========================== */
+  const filteredEmpleados = empleados.filter((e) => {
+    const q = search.toLowerCase();
     return (
-      e.nombre_completo?.toLowerCase().includes(q) ||
+      !q ||
+      e.nombre?.toLowerCase().includes(q) ||
       e.cargo?.nombre?.toLowerCase().includes(q) ||
       e.area?.nombre?.toLowerCase().includes(q)
     );
   });
 
+  /* =========================
+     CRUD
+  ========================== */
   const handleSave = async (e) => {
     e.preventDefault();
 
@@ -91,187 +117,175 @@ export default function EmpleadosView() {
     const method = editingEmpleado ? 'PUT' : 'POST';
 
     const payload = {
-      nombre_completo: formData.nombre_completo,
-      cargo_id: parseInt(formData.cargo_id),
-      sede_id: parseInt(formData.sede_id),
-      area_id: formData.area_id ? parseInt(formData.area_id) : null,
-      empresa_id: formData.empresa_id ? parseInt(formData.empresa_id) : null
+      nombre: formData.nombre,
+      cargo_id: Number(formData.cargo_id),
+      area_id: formData.area_id ? Number(formData.area_id) : null,
+      empresa_id: formData.empresa_id ? Number(formData.empresa_id) : null,
+      ciudad_id: Number(formData.ciudad_id),
     };
 
-    const response = await fetch(url, {
+    const res = await fetch(url, {
       method,
-      headers: {
-        'Content-Type': 'application/json',
-        ...authHeaders()
-      },
-      body: JSON.stringify(payload)
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify(payload),
     });
 
-    if (response.ok) {
+    if (res.ok) {
       setIsModalOpen(false);
       setEditingEmpleado(null);
-      setFormData({
-        nombre_completo: '',
-        cargo_id: '',
-        area_id: '',
-        empresa_id: '',
-        sede_id: ''
-      });
+      resetForm();
       fetchEmpleados();
     } else {
-      const error = await response.json();
-      alert(error.detail || 'Error al guardar empleado');
+      const err = await res.json();
+      alert(err.detail || 'Error al guardar');
     }
   };
 
   const handleRetirar = async (id) => {
     if (!window.confirm('¿Desea retirar este empleado?')) return;
-
     await fetch(`${API_BASE_URL}/empleados/${id}/retirar`, {
       method: 'PATCH',
-      headers: authHeaders()
+      headers: authHeaders(),
     });
-
     fetchEmpleados();
   };
 
   const handleActivar = async (id) => {
     await fetch(`${API_BASE_URL}/empleados/${id}/activar`, {
       method: 'PATCH',
-      headers: authHeaders()
+      headers: authHeaders(),
     });
-
     fetchEmpleados();
+  };
+
+  /* =========================
+     MODAL CONTROL
+  ========================== */
+  const resetForm = () => {
+    setFormData({
+      nombre: '',
+      cargo_id: '',
+      area_id: '',
+      empresa_id: '',
+      ciudad_id: '',
+    });
   };
 
   const openModal = (empleado = null, readOnly = false) => {
     if (empleado) {
       setFormData({
-        nombre_completo: empleado.nombre_completo || '',
-        cargo_id: empleado.cargo?.id || '',
-        area_id: empleado.area?.id || '',
-        empresa_id: empleado.empresa?.id || '',
-        sede_id: empleado.sede?.id || ''
+        nombre: empleado.nombre || '',
+        cargo_id: empleado.cargo?.id || empleado.cargo_id || '',
+        area_id: empleado.area?.id || empleado.area_id || '',
+        empresa_id: empleado.empresa?.id || empleado.empresa_id || '',
+        ciudad_id: empleado.ciudad?.id || empleado.ciudad_id || '',
       });
       setEditingEmpleado(empleado);
     } else {
-      setFormData({
-        nombre_completo: '',
-        cargo_id: '',
-        area_id: '',
-        empresa_id: '',
-        sede_id: ''
-      });
+      resetForm();
       setEditingEmpleado(null);
     }
-
     setIsReadOnly(readOnly);
     setIsModalOpen(true);
   };
 
+  /* =========================
+     RENDER
+  ========================== */
   return (
-    <div className="animate-in fade-in duration-500">
-      <div className="bg-white rounded-[2rem] shadow-2xl border border-slate-100 overflow-hidden">
-
-        {/* HEADER */}
-        <div className="p-8 flex flex-col sm:flex-row gap-4 justify-between items-center">
-          <div>
-            <h2 className="text-3xl font-black text-slate-900">Empleados</h2>
-            <p className="text-[10px] uppercase tracking-widest text-slate-400">
-              Gestión de personal
-            </p>
+    <div className="p-6 bg-white rounded-3xl shadow-xl">
+      {/* HEADER */}
+      <div className="flex justify-between mb-6">
+        <h2 className="text-3xl font-black">Empleados</h2>
+        <div className="flex gap-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+            <input
+              className="border rounded-xl pl-9 pr-4 py-2"
+              placeholder="Buscar..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
           </div>
-
-          <div className="flex gap-3">
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar..."
-                className="pl-10 pr-4 py-3 rounded-xl border border-slate-100"
-              />
-            </div>
-
-            <button
-              onClick={fetchEmpleados}
-              disabled={loading}
-              className="flex items-center gap-2 px-5 py-3 rounded-xl border"
-            >
-              <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-              {loading ? 'Cargando' : 'Actualizar'}
-            </button>
-
-            <button
-              onClick={() => openModal()}
-              className="bg-blue-600 text-white px-6 py-3 rounded-xl flex items-center gap-2"
-            >
-              <PlusCircle size={18} /> Nuevo
-            </button>
-          </div>
+          <button onClick={fetchEmpleados}>
+            <RefreshCw className={loading ? 'animate-spin' : ''} />
+          </button>
+          <button
+            onClick={() => openModal()}
+            className="bg-blue-600 text-white px-4 py-2 rounded-xl flex items-center gap-2"
+          >
+            <PlusCircle size={18} /> Nuevo
+          </button>
         </div>
+      </div>
 
-        {/* TABLA */}
-        <div className="p-8 overflow-x-auto">
-          <table className="w-full min-w-[600px]">
-            <thead>
-              <tr className="text-left text-xs uppercase text-slate-400">
-                <th>Empleado</th>
-                <th>Cargo / Área</th>
-                <th>Empresa / Sede</th>
-                <th className="text-center">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredEmpleados.map(e => (
-                <tr key={e.id} className="border-t">
-                  <td>{e.nombre_completo}</td>
-                  <td>{e.cargo?.nombre} / {e.area?.nombre || '—'}</td>
-                  <td>{e.empresa?.nombre} / {e.sede?.nombre}</td>
-                  <td className="text-center flex justify-center gap-2 py-2">
+      {/* TABLE */}
+      <table className="w-full">
+        <thead>
+          <tr className="text-xs text-slate-400 text-left">
+            <th>Empleado</th>
+            <th>Cargo / Área</th>
+            <th>Empresa / Sede</th>
+            <th className="text-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {filteredEmpleados.map((e) => {
+            const inactive = e.is_active === false;
+            return (
+              <tr key={e.id} className={inactive ? 'bg-red-50' : 'hover:bg-slate-50'}>
+                <td className="py-3 font-bold">{e.nombre}</td>
+                <td>
+                  <div>{e.cargo?.nombre || '-'}</div>
+                  <div className="text-xs text-slate-400">{e.area?.nombre || 'Sin área'}</div>
+                </td>
+                <td>
+                  <div>{e.empresa?.nombre || '-'}</div>
+                  <div className="text-xs text-slate-400">{e.ciudad?.nombre || '-'}</div>
+                </td>
+                <td className="text-center">
+                  <div className="flex justify-center gap-2">
                     <button onClick={() => openModal(e, true)}><Eye /></button>
-                    {e.is_active ? (
+                    {inactive ? (
+                      <button onClick={() => handleActivar(e.id)}><ShieldCheck /></button>
+                    ) : (
                       <>
                         <button onClick={() => openModal(e)}><Edit3 /></button>
                         <button onClick={() => handleRetirar(e.id)}><Trash2 /></button>
                       </>
-                    ) : (
-                      <button onClick={() => handleActivar(e.id)}><ShieldCheck /></button>
                     )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
 
       {/* MODAL */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center">
-          <div className="bg-white rounded-2xl w-full max-w-2xl p-8">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-2xl">
             <div className="flex justify-between mb-4">
               <h3 className="text-xl font-black">
-                {isReadOnly ? 'Detalle' : editingEmpleado ? 'Editar' : 'Nuevo'} Empleado
+                {isReadOnly ? 'Detalle del Empleado' : editingEmpleado ? 'Editar Empleado' : 'Nuevo Empleado'}
               </h3>
               <button onClick={() => setIsModalOpen(false)}><X /></button>
             </div>
 
-            <form onSubmit={handleSave} className="space-y-4">
+            <form onSubmit={handleSave} className="grid grid-cols-2 gap-4">
               <input
                 disabled={isReadOnly}
-                value={formData.nombre_completo}
-                onChange={e => setFormData({ ...formData, nombre_completo: e.target.value })}
-                className="w-full p-3 border rounded-xl"
                 placeholder="Nombre completo"
+                value={formData.nombre}
+                onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
                 required
               />
 
               <select
                 disabled={isReadOnly}
                 value={formData.cargo_id}
-                onChange={e => setFormData({ ...formData, cargo_id: e.target.value })}
-                className="w-full p-3 border rounded-xl"
+                onChange={(e) => setFormData({ ...formData, cargo_id: e.target.value })}
                 required
               >
                 <option value="">Cargo</option>
@@ -280,10 +294,47 @@ export default function EmpleadosView() {
                 ))}
               </select>
 
+              <select
+                disabled={isReadOnly}
+                value={formData.area_id}
+                onChange={(e) => setFormData({ ...formData, area_id: e.target.value })}
+              >
+                <option value="">Área</option>
+                {catalogs.areas.map(a => (
+                  <option key={a.id} value={a.id}>{a.nombre}</option>
+                ))}
+              </select>
+
+              <select
+                disabled={isReadOnly}
+                value={formData.empresa_id}
+                onChange={(e) => setFormData({ ...formData, empresa_id: e.target.value })}
+              >
+                <option value="">Empresa</option>
+                {catalogs.empresas.map(emp => (
+                  <option key={emp.id} value={emp.id}>{emp.nombre}</option>
+                ))}
+              </select>
+
+              <select
+                disabled={isReadOnly}
+                value={formData.ciudad_id}
+                onChange={(e) => setFormData({ ...formData, ciudad_id: e.target.value })}
+                required
+              >
+                <option value="">Sede</option>
+                {catalogs.ciudades.map(c => (
+                  <option key={c.id} value={c.id}>{c.nombre}</option>
+                ))}
+              </select>
+
               {!isReadOnly && (
-                <button type="submit" className="bg-blue-600 text-white px-6 py-3 rounded-xl flex items-center gap-2">
-                  <Save size={16} /> Guardar
-                </button>
+                <div className="col-span-2 flex justify-end gap-3 mt-4">
+                  <button type="button" onClick={() => setIsModalOpen(false)}>Cancelar</button>
+                  <button type="submit" className="bg-blue-600 text-white px-6 py-2 rounded-xl flex gap-2">
+                    <Save /> Guardar
+                  </button>
+                </div>
               )}
             </form>
           </div>
