@@ -275,10 +275,8 @@ export default function Dashboard({ onLogout }) {
                 <tr>
                   <th className="p-4">Empleado</th>
                   <th className="p-4">Cargo</th>
-                  <th className="p-4">Área</th>
                   <th className="p-4">Marca</th>
                   <th className="p-4">Referencia</th>
-                  <th className="p-4">Serial</th>
                   <th className="p-4">Sede</th>
                   <th className="p-4">Estado</th>
                   <th className="p-4">Acciones</th>
@@ -292,15 +290,9 @@ export default function Dashboard({ onLogout }) {
 
                     <td className="p-4">{item.empleado?.cargo?.nombre}</td>
 
-                    <td className="p-4">{item.empleado?.area?.nombre}</td>
-
                     <td className="p-4">{item.producto?.marca}</td>
 
                     <td className="p-4">{item.producto?.referencia}</td>
-
-                    <td className="p-4 font-mono text-sm">
-                      {item.producto?.serial}
-                    </td>
 
                     <td className="p-4">{item.sede?.nombre}</td>
 
