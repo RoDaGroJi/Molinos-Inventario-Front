@@ -1,51 +1,58 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
-  RefreshCw, PlusCircle, Edit3, Eye,
-  Trash2, ShieldCheck, X, Save,
-  AlertTriangle, CheckCircle
-} from 'lucide-react';
+  RefreshCw,
+  PlusCircle,
+  Edit3,
+  Eye,
+  Trash2,
+  ShieldCheck,
+  X,
+  Save,
+  AlertTriangle,
+  CheckCircle,
+} from "lucide-react";
 
-const API_BASE_URL = 'https://molinos-inventario-back.onrender.com';
+const API_BASE_URL = "https://molinos-inventario-back.onrender.com";
 // const API_BASE_URL = 'http://localhost:8000';
 
 const authHeaders = () => ({
-  Authorization: `Bearer ${localStorage.getItem('token')}`
+  Authorization: `Bearer ${localStorage.getItem("token")}`,
 });
 
 export default function ProductosView() {
-
   /* =========================
      STATES
   ========================== */
   const [productos, setProductos] = useState([]);
   const [catalogs, setCatalogs] = useState({ tipos: [] });
   const [loading, setLoading] = useState(false);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProducto, setEditingProducto] = useState(null);
   const [isReadOnly, setIsReadOnly] = useState(false);
 
   const [formData, setFormData] = useState({
-    tipo_id: '',
-    marca: '',
-    referencia: '',
-    memoria_ram: '',
-    disco_duro: '',
-    serial: ''
+    tipo_id: "",
+    marca: "",
+    referencia: "",
+    memoria_ram: "",
+    disco_duro: "",
+    serial: "",
+    observaciones: "",
   });
 
   const [confirmModal, setConfirmModal] = useState({
     open: false,
-    title: '',
-    message: '',
-    onConfirm: null
+    title: "",
+    message: "",
+    onConfirm: null,
   });
 
   const [messageModal, setMessageModal] = useState({
     open: false,
-    type: 'success',
-    message: ''
+    type: "success",
+    message: "",
   });
 
   /* =========================
@@ -62,11 +69,11 @@ export default function ProductosView() {
   const fetchCatalogs = async () => {
     try {
       const res = await fetch(`${API_BASE_URL}/equipo_tipos/`, {
-        headers: authHeaders()
+        headers: authHeaders(),
       });
       if (res.ok) setCatalogs({ tipos: await res.json() });
     } catch {
-      showMessage('error', 'Error cargando tipos de equipo');
+      showMessage("error", "Error cargando tipos de equipo");
     }
   };
 
@@ -74,11 +81,11 @@ export default function ProductosView() {
     setLoading(true);
     try {
       const res = await fetch(`${API_BASE_URL}/productos/`, {
-        headers: authHeaders()
+        headers: authHeaders(),
       });
       if (res.ok) setProductos(await res.json());
     } catch {
-      showMessage('error', 'Error cargando productos');
+      showMessage("error", "Error cargando productos");
     } finally {
       setLoading(false);
     }
@@ -89,12 +96,13 @@ export default function ProductosView() {
   ========================== */
   const resetForm = () => {
     setFormData({
-      tipo_id: '',
-      marca: '',
-      referencia: '',
-      memoria_ram: '',
-      disco_duro: '',
-      serial: ''
+      tipo_id: "",
+      marca: "",
+      referencia: "",
+      memoria_ram: "",
+      disco_duro: "",
+      serial: "",
+      observaciones: "",
     });
   };
 
@@ -105,7 +113,7 @@ export default function ProductosView() {
   /* =========================
      FILTER
   ========================== */
-  const filteredProductos = productos.filter(p => {
+  const filteredProductos = productos.filter((p) => {
     const q = search.toLowerCase();
     return (
       !q ||
@@ -125,14 +133,14 @@ export default function ProductosView() {
       ? `${API_BASE_URL}/productos/${editingProducto.id}`
       : `${API_BASE_URL}/productos/`;
 
-    const method = editingProducto ? 'PUT' : 'POST';
+    const method = editingProducto ? "PUT" : "POST";
 
     try {
       const res = await fetch(url, {
         method,
         headers: {
-          'Content-Type': 'application/json',
-          ...authHeaders()
+          "Content-Type": "application/json",
+          ...authHeaders(),
         },
         body: JSON.stringify({
           tipo_id: Number(formData.tipo_id),
@@ -140,61 +148,61 @@ export default function ProductosView() {
           referencia: formData.referencia || null,
           memoria_ram: formData.memoria_ram || null,
           disco_duro: formData.disco_duro || null,
-          serial: formData.serial
-        })
+          serial: formData.serial,
+          observaciones: formData.observaciones || null,
+        }),
       });
 
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.detail || 'Error al guardar');
+        throw new Error(err.detail || "Error al guardar");
       }
 
       showMessage(
-        'success',
+        "success",
         editingProducto
-          ? 'Producto actualizado correctamente'
-          : 'Producto creado correctamente'
+          ? "Producto actualizado correctamente"
+          : "Producto creado correctamente",
       );
 
       setIsModalOpen(false);
       setEditingProducto(null);
       resetForm();
       fetchProductos();
-
     } catch (error) {
-      showMessage('error', error.message);
+      showMessage("error", error.message);
     }
   };
 
   const confirmRetirar = (id) => {
     setConfirmModal({
       open: true,
-      title: 'Retirar producto',
-      message: '¿Está seguro de retirar este producto?',
+      title: "Retirar producto",
+      message: "¿Está seguro de retirar este producto?",
       onConfirm: async () => {
         await fetch(`${API_BASE_URL}/productos/${id}/retirar`, {
-          method: 'PATCH',
-          headers: authHeaders()
+          method: "PATCH",
+          headers: authHeaders(),
         });
         fetchProductos();
         setConfirmModal({ open: false });
-      }
+      },
     });
   };
 
   const confirmActivar = (id) => {
     setConfirmModal({
       open: true,
-      title: 'Activar producto',
-      message: '¿Desea activar este producto nuevamente?',
+      title: "Activar producto",
+      message: "¿Desea activar este producto nuevamente?",
       onConfirm: async () => {
         await fetch(`${API_BASE_URL}/productos/${id}/activar`, {
-          method: 'PATCH',
-          headers: authHeaders()
+          method: "PATCH",
+          headers: authHeaders(),
         });
         fetchProductos();
         setConfirmModal({ open: false });
-      }
+      },
     });
   };
 
@@ -204,12 +212,13 @@ export default function ProductosView() {
   const openModal = (producto = null, readOnly = false) => {
     if (producto) {
       setFormData({
-        tipo_id: producto.tipo?.id || '',
-        marca: producto.marca || '',
-        referencia: producto.referencia || '',
-        memoria_ram: producto.memoria_ram || '',
-        disco_duro: producto.disco_duro || '',
-        serial: producto.serial || ''
+        tipo_id: producto.tipo?.id || "",
+        marca: producto.marca || "",
+        referencia: producto.referencia || "",
+        memoria_ram: producto.memoria_ram || "",
+        disco_duro: producto.disco_duro || "",
+        serial: producto.serial || "",
+        observaciones: producto.observaciones || "",
       });
       setEditingProducto(producto);
     } else {
@@ -225,7 +234,6 @@ export default function ProductosView() {
   ========================== */
   return (
     <div className="p-6 bg-white rounded-3xl shadow-xl">
-
       {/* HEADER */}
       <div className="flex justify-between mb-6">
         <h2 className="text-3xl font-black">Productos</h2>
@@ -233,11 +241,11 @@ export default function ProductosView() {
           <input
             placeholder="Buscar..."
             value={search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={(e) => setSearch(e.target.value)}
             className="border rounded-xl px-4 py-2"
           />
           <button onClick={fetchProductos}>
-            <RefreshCw className={loading ? 'animate-spin' : ''} />
+            <RefreshCw className={loading ? "animate-spin" : ""} />
           </button>
           <button
             onClick={() => openModal()}
@@ -258,10 +266,13 @@ export default function ProductosView() {
           </tr>
         </thead>
         <tbody>
-          {filteredProductos.map(p => {
+          {filteredProductos.map((p) => {
             const inactive = p.is_active === false;
             return (
-              <tr key={p.id} className={inactive ? 'bg-red-50' : 'hover:bg-slate-50'}>
+              <tr
+                key={p.id}
+                className={inactive ? "bg-red-50" : "hover:bg-slate-50"}
+              >
                 <td className="py-3">
                   <strong>{p.tipo?.nombre}</strong>
                   <div className="text-xs">{p.marca}</div>
@@ -270,17 +281,29 @@ export default function ProductosView() {
                 <td className="text-sm text-slate-700">
                   {p.memoria_ram && <div>RAM: {p.memoria_ram}</div>}
                   {p.disco_duro && <div>Disco: {p.disco_duro}</div>}
-                  {p.referencia && <div className="text-xs text-slate-500">Ref: {p.referencia}</div>}
+                  {p.referencia && (
+                    <div className="text-xs text-slate-500">
+                      Ref: {p.referencia}
+                    </div>
+                  )}
                 </td>
                 <td className="text-center">
                   <div className="flex justify-center gap-2">
-                    <button onClick={() => openModal(p, true)}><Eye /></button>
+                    <button onClick={() => openModal(p, true)}>
+                      <Eye />
+                    </button>
                     {inactive ? (
-                      <button onClick={() => confirmActivar(p.id)}><ShieldCheck /></button>
+                      <button onClick={() => confirmActivar(p.id)}>
+                        <ShieldCheck />
+                      </button>
                     ) : (
                       <>
-                        <button onClick={() => openModal(p)}><Edit3 /></button>
-                        <button onClick={() => confirmRetirar(p.id)}><Trash2 /></button>
+                        <button onClick={() => openModal(p)}>
+                          <Edit3 />
+                        </button>
+                        <button onClick={() => confirmRetirar(p.id)}>
+                          <Trash2 />
+                        </button>
                       </>
                     )}
                   </div>
@@ -297,95 +320,120 @@ export default function ProductosView() {
           <div className="bg-white rounded-3xl p-6 w-full max-w-3xl">
             <div className="flex justify-between mb-4">
               <h3 className="text-xl font-black">
-                {isReadOnly ? 'Detalle' : editingProducto ? 'Editar' : 'Nuevo'} Producto
+                {isReadOnly ? "Detalle" : editingProducto ? "Editar" : "Nuevo"}{" "}
+                Producto
               </h3>
-              <button onClick={() => setIsModalOpen(false)}><X /></button>
+              <button onClick={() => setIsModalOpen(false)}>
+                <X />
+              </button>
             </div>
 
             <form onSubmit={handleSave} className="grid grid-cols-2 gap-4">
+              {/* TIPO */}
+              <select
+                required
+                disabled={isReadOnly}
+                value={formData.tipo_id}
+                onChange={(e) =>
+                  setFormData({ ...formData, tipo_id: e.target.value })
+                }
+                className="border rounded-xl px-4 py-2"
+              >
+                <option value="">Tipo de equipo</option>
+                {catalogs.tipos.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.nombre}
+                  </option>
+                ))}
+              </select>
 
-  {/* TIPO */}
-  <select
-    required
-    disabled={isReadOnly}
-    value={formData.tipo_id}
-    onChange={e => setFormData({ ...formData, tipo_id: e.target.value })}
-    className="border rounded-xl px-4 py-2"
-  >
-    <option value="">Tipo de equipo</option>
-    {catalogs.tipos.map(t => (
-      <option key={t.id} value={t.id}>{t.nombre}</option>
-    ))}
-  </select>
+              {/* MARCA */}
+              <input
+                required
+                disabled={isReadOnly}
+                placeholder="Marca"
+                value={formData.marca}
+                onChange={(e) =>
+                  setFormData({ ...formData, marca: e.target.value })
+                }
+                className="border rounded-xl px-4 py-2"
+              />
 
-  {/* MARCA */}
-  <input
-    required
-    disabled={isReadOnly}
-    placeholder="Marca"
-    value={formData.marca}
-    onChange={e => setFormData({ ...formData, marca: e.target.value })}
-    className="border rounded-xl px-4 py-2"
-  />
+              {/* SERIAL */}
+              <input
+                required
+                disabled={isReadOnly}
+                placeholder="Serial"
+                value={formData.serial}
+                onChange={(e) =>
+                  setFormData({ ...formData, serial: e.target.value })
+                }
+                className="border rounded-xl px-4 py-2"
+              />
 
-  {/* SERIAL */}
-  <input
-    required
-    disabled={isReadOnly}
-    placeholder="Serial"
-    value={formData.serial}
-    onChange={e => setFormData({ ...formData, serial: e.target.value })}
-    className="border rounded-xl px-4 py-2"
-  />
+              {/* REFERENCIA */}
+              <input
+                disabled={isReadOnly}
+                placeholder="Referencia / Modelo"
+                value={formData.referencia}
+                onChange={(e) =>
+                  setFormData({ ...formData, referencia: e.target.value })
+                }
+                className="border rounded-xl px-4 py-2"
+              />
 
-  {/* REFERENCIA */}
-  <input
-    disabled={isReadOnly}
-    placeholder="Referencia / Modelo"
-    value={formData.referencia}
-    onChange={e => setFormData({ ...formData, referencia: e.target.value })}
-    className="border rounded-xl px-4 py-2"
-  />
+              {/* MEMORIA RAM */}
+              <input
+                disabled={isReadOnly}
+                placeholder="Memoria RAM (ej: 8 GB)"
+                value={formData.memoria_ram}
+                onChange={(e) =>
+                  setFormData({ ...formData, memoria_ram: e.target.value })
+                }
+                className="border rounded-xl px-4 py-2"
+              />
 
-  {/* MEMORIA RAM */}
-  <input
-    disabled={isReadOnly}
-    placeholder="Memoria RAM (ej: 8 GB)"
-    value={formData.memoria_ram}
-    onChange={e => setFormData({ ...formData, memoria_ram: e.target.value })}
-    className="border rounded-xl px-4 py-2"
-  />
+              {/* DISCO DURO */}
+              <input
+                disabled={isReadOnly}
+                placeholder="Disco duro (ej: 256 GB SSD)"
+                value={formData.disco_duro}
+                onChange={(e) =>
+                  setFormData({ ...formData, disco_duro: e.target.value })
+                }
+                className="border rounded-xl px-4 py-2"
+              />
+              {/* OBSERVACIONES */}
+              <textarea
+                disabled={isReadOnly}
+                placeholder="Observaciones"
+                value={formData.observaciones}
+                onChange={(e) =>
+                  setFormData({ ...formData, observaciones: e.target.value })
+                }
+                rows={3}
+                className="col-span-2 border rounded-xl px-4 py-2 resize-none"
+              />
 
-  {/* DISCO DURO */}
-  <input
-    disabled={isReadOnly}
-    placeholder="Disco duro (ej: 256 GB SSD)"
-    value={formData.disco_duro}
-    onChange={e => setFormData({ ...formData, disco_duro: e.target.value })}
-    className="border rounded-xl px-4 py-2"
-  />
-
-  {/* BOTONES */}
-  {!isReadOnly && (
-    <div className="col-span-2 flex justify-end gap-3 mt-6">
-      <button
-        type="button"
-        onClick={() => setIsModalOpen(false)}
-        className="px-4 py-2 border rounded-xl"
-      >
-        Cancelar
-      </button>
-      <button
-        type="submit"
-        className="bg-blue-600 text-white px-6 py-2 rounded-xl flex items-center gap-2"
-      >
-        <Save size={18} /> Guardar
-      </button>
-    </div>
-  )}
-
-</form>
-
+              {/* BOTONES */}
+              {!isReadOnly && (
+                <div className="col-span-2 flex justify-end gap-3 mt-6">
+                  <button
+                    type="button"
+                    onClick={() => setIsModalOpen(false)}
+                    className="px-4 py-2 border rounded-xl"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="bg-blue-600 text-white px-6 py-2 rounded-xl flex items-center gap-2"
+                  >
+                    <Save size={18} /> Guardar
+                  </button>
+                </div>
+              )}
+            </form>
           </div>
         </div>
       )}
@@ -398,7 +446,9 @@ export default function ProductosView() {
             <h3 className="font-black mt-3">{confirmModal.title}</h3>
             <p className="text-sm mt-2">{confirmModal.message}</p>
             <div className="flex justify-center gap-4 mt-6">
-              <button onClick={() => setConfirmModal({ open: false })}>Cancelar</button>
+              <button onClick={() => setConfirmModal({ open: false })}>
+                Cancelar
+              </button>
               <button
                 className="bg-red-600 text-white px-4 py-2 rounded-xl"
                 onClick={confirmModal.onConfirm}
@@ -414,10 +464,11 @@ export default function ProductosView() {
       {messageModal.open && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl p-6 max-w-sm text-center">
-            {messageModal.type === 'success'
-              ? <CheckCircle className="mx-auto text-green-500" size={40} />
-              : <AlertTriangle className="mx-auto text-red-500" size={40} />
-            }
+            {messageModal.type === "success" ? (
+              <CheckCircle className="mx-auto text-green-500" size={40} />
+            ) : (
+              <AlertTriangle className="mx-auto text-red-500" size={40} />
+            )}
             <p className="mt-4">{messageModal.message}</p>
             <button
               className="mt-6 bg-blue-600 text-white px-6 py-2 rounded-xl"
