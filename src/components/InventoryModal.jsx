@@ -231,7 +231,6 @@ export default function InventoryModal({ isOpen, onClose, onSave, initialData, r
     }
   };
 
-
   const inputClass = `w-full bg-slate-50 border border-slate-100 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none font-medium transition-all ${readOnly ? 'bg-slate-100 cursor-not-allowed text-slate-500' : 'text-slate-700'
     }`;
 
