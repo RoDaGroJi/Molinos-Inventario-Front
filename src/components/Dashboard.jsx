@@ -358,11 +358,24 @@ export default function Dashboard({ onLogout }) {
         onClose={() => setIsModalOpen(false)}
         initialData={editingItem}
         readOnly={isReadOnly}
-        onSave={() => {
-          fetchInventory();
-          setIsModalOpen(false);
+        onSave={(success, errorMessage) => {
+          if (success) {
+            fetchInventory();
+            setIsModalOpen(false);
+
+            setMessageModal({
+              type: "success",
+              message: "Inventario guardado correctamente",
+            });
+          } else {
+            setMessageModal({
+              type: "error",
+              message: errorMessage || "Error al guardar inventario",
+            });
+          }
         }}
       />
+
 
       {messageModal && (
         <MessageModal {...messageModal} onClose={() => setMessageModal(null)} />

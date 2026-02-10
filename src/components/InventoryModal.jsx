@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Save, Search, UserPlus, Box, Trash2, Plus } from 'lucide-react';
 
 const API_BASE_URL = 'https://molinos-inventario-back.onrender.com';
- //const API_BASE_URL = 'http://localhost:8000';
+//const API_BASE_URL = 'http://localhost:8000';
 
 export default function InventoryModal({ isOpen, onClose, onSave, initialData, readOnly }) {
   const [formData, setFormData] = useState({
@@ -12,7 +12,7 @@ export default function InventoryModal({ isOpen, onClose, onSave, initialData, r
     quien_entrega: '',
     observacion: ''
   });
-  
+
   const [ciudades, setCiudades] = useState([]);
 
   const [empleadoSearch, setEmpleadoSearch] = useState('');
@@ -44,11 +44,11 @@ export default function InventoryModal({ isOpen, onClose, onSave, initialData, r
   // Buscar empleados cuando cambia el término de búsqueda
   useEffect(() => {
     // Solo buscar si hay texto Y no coincide con el empleado seleccionado
-    const shouldSearch = empleadoSearch && 
-                         empleadoSearch.length >= 2 && 
-                         !readOnly &&
-                         (!selectedEmpleado || empleadoSearch !== selectedEmpleado.nombre);
-    
+    const shouldSearch = empleadoSearch &&
+      empleadoSearch.length >= 2 &&
+      !readOnly &&
+      (!selectedEmpleado || empleadoSearch !== selectedEmpleado.nombre);
+
     if (isOpen && shouldSearch) {
       const searchEmpleados = async () => {
         const headers = { 'Authorization': `Bearer ${localStorage.getItem('token')}` };
@@ -102,12 +102,12 @@ export default function InventoryModal({ isOpen, onClose, onSave, initialData, r
         quien_entrega: initialData.quien_entrega || '',
         observacion: initialData.observacion || ''
       });
-      
+
       if (initialData.empleado) {
         setSelectedEmpleado(initialData.empleado);
         setEmpleadoSearch(initialData.empleado.nombre || '');
       }
-      
+
       if (initialData.producto) {
         setSelectedProductos([initialData.producto]);
         setProductoSearch(
@@ -142,11 +142,11 @@ export default function InventoryModal({ isOpen, onClose, onSave, initialData, r
       setSelectedProductos([]);
       setProductoSearch('');
     }
-    setFormData(prev => ({ 
-      ...prev, 
-      empleado_id: empleado.id, 
+    setFormData(prev => ({
+      ...prev,
+      empleado_id: empleado.id,
       producto_id: prev.producto_id || '', // Mantener producto_id si estamos editando
-      sede_id: empleado.ciudad_id || prev.sede_id 
+      sede_id: empleado.ciudad_id || prev.sede_id
     }));
   };
 
@@ -163,71 +163,82 @@ export default function InventoryModal({ isOpen, onClose, onSave, initialData, r
     setSelectedProductos(selectedProductos.filter(p => p.id !== productoId));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!readOnly && formData.empleado_id && selectedProductos.length > 0) {
-      // Si hay múltiples productos, siempre crear múltiples registros (tanto para edición como creación)
+
+    if (readOnly) return;
+    if (!formData.empleado_id || selectedProductos.length === 0) return;
+
+    const headers = {
+      "Authorization": `Bearer ${localStorage.getItem("token")}`,
+      "Content-Type": "application/json"
+    };
+
+    try {
+      /* ================= MULTIPLE PRODUCTOS ================= */
       if (selectedProductos.length > 1 || !initialData) {
-        // Crear múltiples registros
-        onSave({ ...formData, productos: selectedProductos, isMultiple: true, originalId: initialData?.id });
-      } else {
-        // Si es edición y solo hay un producto, actualizar el registro existente
-        const empleadoId = parseInt(formData.empleado_id);
-        const productoId = parseInt(selectedProductos[0].id);
-        
-        // Validar que los IDs sean números válidos
-        if (isNaN(empleadoId) || isNaN(productoId)) {
-          return;
-        }
-        
-        // Preparar sede_id: convertir a número o null
-        let sedeIdValue = null;
-        if (formData.sede_id && formData.sede_id !== '') {
-          const sedeIdParsed = parseInt(formData.sede_id);
-          if (!isNaN(sedeIdParsed)) {
-            sedeIdValue = sedeIdParsed;
+        for (const prod of selectedProductos) {
+          const body = {
+            empleado_id: parseInt(formData.empleado_id),
+            producto_id: parseInt(prod.id),
+            sede_id: formData.sede_id ? parseInt(formData.sede_id) : null,
+            quien_entrega: formData.quien_entrega || null,
+            observacion: formData.observacion || null,
+          };
+
+          const res = await fetch(`${API_BASE_URL}/inventory/`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify(body),
+          });
+
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            onSave(false, err.detail || "Error guardando inventario");
+            return;
           }
         }
-        
-        // Construir objeto solo con campos válidos (omitir null/undefined para campos opcionales)
-        const dataToSave = {
-          empleado_id: empleadoId,
-          producto_id: productoId
-        };
-        
-        // Agregar campos opcionales solo si tienen valor
-        if (sedeIdValue !== null) {
-          dataToSave.sede_id = sedeIdValue;
-        }
-        
-        const quienEntrega = formData.quien_entrega && formData.quien_entrega.trim() !== '' ? formData.quien_entrega.trim() : null;
-        if (quienEntrega !== null) {
-          dataToSave.quien_entrega = quienEntrega;
-        }
-        
-        const observacion = formData.observacion && formData.observacion.trim() !== '' ? formData.observacion.trim() : null;
-        if (observacion !== null) {
-          dataToSave.observacion = observacion;
-        }
-        
-        // Validar que los campos requeridos no sean null
-        if (!dataToSave.empleado_id || !dataToSave.producto_id) {
-          return;
-        }
-        
-        onSave(dataToSave);
+
+        onSave(true);
+        return;
       }
+
+      /* ================= EDICIÓN SIMPLE ================= */
+      const body = {
+        empleado_id: parseInt(formData.empleado_id),
+        producto_id: parseInt(selectedProductos[0].id),
+        sede_id: formData.sede_id ? parseInt(formData.sede_id) : null,
+        quien_entrega: formData.quien_entrega || null,
+        observacion: formData.observacion || null,
+      };
+
+      const res = await fetch(`${API_BASE_URL}/inventory/${initialData.id}`, {
+        method: "PUT",
+        headers,
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        onSave(false, err.detail || "Error actualizando inventario");
+        return;
+      }
+
+      onSave(true);
+
+    } catch (error) {
+      onSave(false, "Error de conexión con el servidor");
     }
   };
 
-  const inputClass = `w-full bg-slate-50 border border-slate-100 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none font-medium transition-all ${
-    readOnly ? 'bg-slate-100 cursor-not-allowed text-slate-500' : 'text-slate-700'
-  }`;
+
+  const inputClass = `w-full bg-slate-50 border border-slate-100 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none font-medium transition-all ${readOnly ? 'bg-slate-100 cursor-not-allowed text-slate-500' : 'text-slate-700'
+    }`;
 
   return (
     <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center z-[100] p-2 sm:p-4">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[95vh] flex flex-col overflow-hidden border border-slate-200 animate-in fade-in zoom-in duration-200">
-        
+
         {/* HEADER */}
         <div className="bg-slate-50 px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-100 flex justify-between items-center shrink-0">
           <div>
@@ -245,7 +256,7 @@ export default function InventoryModal({ isOpen, onClose, onSave, initialData, r
 
         {/* CUERPO */}
         <form id="inventory-form" className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6" onSubmit={handleSubmit}>
-          
+
           <div className="space-y-2 sm:space-y-3">
             <h3 className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-50 pb-1.5">
               <UserPlus size={12} className="text-blue-500" /> Buscar Empleado
@@ -278,7 +289,7 @@ export default function InventoryModal({ isOpen, onClose, onSave, initialData, r
                   }}
                 />
               </div>
-              
+
               {/* Dropdown de resultados de búsqueda */}
               {!readOnly && empleados.length > 0 && empleadoSearch && (
                 <div className="absolute z-10 w-full mt-2 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
@@ -297,7 +308,7 @@ export default function InventoryModal({ isOpen, onClose, onSave, initialData, r
                   ))}
                 </div>
               )}
-              
+
               {/* Información del empleado seleccionado */}
               {selectedEmpleado && (
                 <div className="mt-2 p-3 bg-blue-50 rounded-lg border border-blue-100 text-xs">
@@ -336,7 +347,7 @@ export default function InventoryModal({ isOpen, onClose, onSave, initialData, r
                   }}
                 />
               </div>
-              
+
               {/* Dropdown de resultados de búsqueda */}
               {!readOnly && productos.length > 0 && productoSearch && (
                 <div className="absolute z-10 w-full mt-2 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
@@ -359,8 +370,8 @@ export default function InventoryModal({ isOpen, onClose, onSave, initialData, r
                   ))}
                 </div>
               )}
-              
-              
+
+
               {/* Lista de productos seleccionados */}
               {selectedProductos.length > 0 && (
                 <div className="mt-3 space-y-2">
@@ -404,7 +415,7 @@ export default function InventoryModal({ isOpen, onClose, onSave, initialData, r
                 <select
                   className={inputClass}
                   value={formData.sede_id}
-                  onChange={e => setFormData({...formData, sede_id: e.target.value})}
+                  onChange={e => setFormData({ ...formData, sede_id: e.target.value })}
                   disabled={readOnly}
                 >
                   <option value="">Seleccione sede...</option>
@@ -419,7 +430,7 @@ export default function InventoryModal({ isOpen, onClose, onSave, initialData, r
                   className={inputClass}
                   value={formData.quien_entrega}
                   placeholder="Nombre de quien entrega..."
-                  onChange={e => setFormData({...formData, quien_entrega: e.target.value})}
+                  onChange={e => setFormData({ ...formData, quien_entrega: e.target.value })}
                 />
               </div>
             </div>
@@ -446,11 +457,10 @@ export default function InventoryModal({ isOpen, onClose, onSave, initialData, r
               type="submit"
               form="inventory-form"
               disabled={!formData.empleado_id || selectedProductos.length === 0}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg font-black shadow-lg transition-all text-[10px] uppercase ${
-                !formData.empleado_id || selectedProductos.length === 0
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg font-black shadow-lg transition-all text-[10px] uppercase ${!formData.empleado_id || selectedProductos.length === 0
                   ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
                   : 'bg-blue-600 text-white hover:bg-blue-700 cursor-pointer'
-              }`}
+                }`}
             >
               <Save size={14} /> {initialData ? 'Actualizar' : 'Guardar'}
             </button>
